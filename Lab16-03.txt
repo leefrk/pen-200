@@ -233,6 +233,11 @@ type C:\Windows\System32\mimilsa.log
 
 CORP
 
+Hyper-V
+VTL1
+Dll
+
+
 
 
 
