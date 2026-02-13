@@ -1,0 +1,388 @@
+Active Directory Introduction and Enumeration
+
+Active Directory - Manual Enumeration
+
+Active Directory - Enumeration Using Legacy Windows Tools
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.50.75
+net user /domain
+net user jeffadmin /domain
+net group /domain
+net group "Sales Department" /domain
+
+----------
+attacker 192.168.49.57
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+Start VM Group 1 and log in to CLIENT75 as stephanie. Use net.exe to enumerate the corp.com domain. Which user is a member of the Management Department group?
+
+xfreerdp /u:stephanie /p:LegmanTeamBenzoin!! /v:192.168.57.75
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+net group "Management Department" /domain
+jen
+
+----------
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use net.exe to enumerate the users and groups in the modified corp.com domain to obtain the flag.
+
+net group /domain
+OS{40d3507c8c454fa2512009180a8ff6dd}
+
+--------------
+Enumerating Active Directory using PowerShell and .NET Classes
+
+Get-ADUser (in RSAT)
+
+DN:
+CN=Stephanie,CN=Users,DC=corp,DC=com
+
+[System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+PdcRoleOwner        : DC1.corp.com
+
+([adsi]'').distinguishedName
+DC=corp,DC=com
+
+$PDC = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$LDAP
+LDAP://DC1.corp.com/DC=corp,DC=com
+
+------
+Adding Search Functionality to our Script
+
+$PDC = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$direntry = New-Object System.DirectoryServices.DirectoryEntry($LDAP)
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.filter="samAccountType=805306368"
+$dirsearcher.FindAll()
+
+$domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+$PDC = $domainObj.PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$direntry = New-Object System.DirectoryServices.DirectoryEntry($LDAP)
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.filter="samAccountType=805306368" 
+$result = $dirsearcher.FindAll()
+Foreach($obj in $result)
+{
+    Foreach($prop in $obj.Properties)
+    {
+        $prop 
+    }
+
+    Write-Host "-------------------------------"
+}
+
+$domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+$PDC = $domainObj.PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$direntry = New-Object System.DirectoryServices.DirectoryEntry($LDAP)
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.filter="name=jeffadmin" 
+$result = $dirsearcher.FindAll()
+Foreach($obj in $result)
+{
+    Foreach($prop in $obj.Properties)
+    {
+        $prop.memberof
+    }
+
+    Write-Host "-------------------------------"
+}
+
+--------
+function.ps1:
+function LDAPSearch {
+    param (
+        [string]$LDAPQuery
+    )
+    $PDC = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().PdcRoleOwner.Name
+    $DistinguishedName = ([adsi]'').distinguishedName
+    $DirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$PDC/$DistinguishedName")
+    $DirectorySearcher = New-Object System.DirectoryServices.DirectorySearcher($DirectoryEntry, $LDAPQuery)
+    return $DirectorySearcher.FindAll()
+}
+
+powershell -ep bypass
+Import-Module .\function.ps1
+
+LDAPSearch -LDAPQuery "(samAccountType=805306368)"
+
+LDAPSearch -LDAPQuery "(objectclass=group)"
+
+foreach ($group in $(LDAPSearch -LDAPQuery "(objectCategory=group)")) {
+$group.properties | select {$_.cn}, {$_.member}
+}
+
+$sales = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Sales Department))"
+$sales.properties.member
+
+$group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Development Department*))"
+$group.properties.member
+
+$group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Management Department*))"
+$group.properties.member
+
+------------
+target 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use the newly developed PowerShell script to enumerate the domain groups, starting with Service Personnel. Unravel the nested groups, then enumerate the attributes for the last direct user member of the nested groups to obtain the flag
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+powershell -ep bypass
+Import-Module .\function.ps1
+
+$group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Service Personnel))"
+$group.properties.member
+
+$group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Billing))"
+$group.properties.member
+
+$group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Customer support))"
+$group.properties.member
+CN=michelle,CN=Users,DC=corp,DC=com
+
+enumeration.ps1:
+$domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+$PDC = $domainObj.PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$direntry = New-Object System.DirectoryServices.DirectoryEntry($LDAP)
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.filter="name=michelle"
+$result = $dirsearcher.FindAll()
+Foreach($obj in $result)
+{
+    Foreach($prop in $obj.Properties)
+    {
+        $prop
+    }
+
+    Write-Host "-------------------------------"
+}
+
+OS{6d4d142c50df73994d0a0e58f489329d}
+
+---------
+AD Enumeration with PowerView
+
+Import-Module .\PowerView.ps1
+Get-NetDomain
+Get-NetUser
+Get-NetUser | select cn
+Get-NetUser | select cn,pwdlastset,lastlogon
+Get-NetGroup | select cn
+Get-NetGroup "Sales Department" | select member
+
+--------
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to enumerate the modified corp.com domain. Which new user is a part of the Domain Admins group?
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+powershell -ep bypass
+Import-Module C:\Tools\PowerView.ps1
+Get-NetGroup "Domain Admins" | select member
+nathalie
+
+Continue enumerating the corp.com domain in VM Group 2. Enumerate which Office the user fred is working in to obtain the flag
+
+Get-NetUser "fred"
+OS{dde42b4b92e82112145da65f2e83a3d5}
+
+-------------
+Manual Enumeration - Expanding our Repertoire
+
+Enumerating Operating Systems
+
+Get-NetComputer
+Get-NetComputer | select operatingsystem,dnshostname
+
+----------
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to enumerate the operating systems in the modified corp.com domain to obtain the flag
+
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+Get-NetComputer
+OS{1f3e91af15fa63f1ea91df82634813a9}
+
+--------
+Getting an Overview - Permissions and Logged on Users
+
+compromise other users to retain foothold (change password or disable)
+Service Accounts
+data store in database or file server
+
+find admin right computer:
+Find-LocalAdminAccess
+
+which user logged in computer:
+Get-NetSession -ComputerName files04 -Verbose
+(use NetWkstaUserEnum and NetSessionEnum API)
+
+C:\Tools\PSTools
+.\PsLoggedon.exe \\files04
+(Remote Registry service should enabled)
+
+------
+Start VM Group 2 and log in to CLIENT75 as stephanie. Find out which new machine stephanie has administrative privileges on, then log in to that machine and obtain the flag from the Administrator Desktop
+
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+powershell -ep bypass
+Import-Module C:\Tools\PowerView.ps1
+Find-LocalAdminAccess
+
+mstsc
+web04.corp.com
+c:\users\administrator\desktop\proof
+OS{b15e44c1536dce0a812e4d37ab5af055}
+
+------------
+Enumeration Through Service Principal Names
+
+predefined Service Accounts:
+LocalSystem, LocalService, and NetworkService
+
+Managed Service Accounts, Group Managed Service Accounts
+
+enumerate SPNs in the domain:
+C:\Tools
+setspn -L iis_service
+
+Registered ServicePrincipalNames for CN=iis_service,CN=Users,DC=corp,DC=com:
+        HTTP/web04.corp.com
+
+or:
+Get-NetUser -SPN | select samaccountname,serviceprincipalname
+
+samaccountname serviceprincipalname
+iis_service    {HTTP/web04.corp.com, HTTP/web04, HTTP/web04.corp.com:80}
+
+nslookup.exe web04.corp.com
+
+---------
+Enumerating Object Permissions
+
+Access Control Entries (ACE) make up the Access Control List (ACL),  ACL is a list of ACE
+(Ref: 
+https://learn.microsoft.com/en-us/windows/win32/secauthz/access-control-lists
+https://learn.microsoft.com/en-us/windows/win32/secauthz/access-control-entries)
+
+access token
+
+GenericAll: Full permissions on object
+GenericWrite: Edit certain attributes on the object
+WriteOwner: Change ownership of the object
+WriteDACL: Edit ACE's applied to object
+AllExtendedRights: Change password, reset password, etc.
+ForceChangePassword: Password change for object
+Self (Self-Membership): Add ourselves to for example a group
+
+enumerate our own user to determine which ACEs are applied to it:
+Get-ObjectAcl -Identity stephanie
+
+ObjectSID              : S-1-5-21-1987370270-658905905-1781884369-1104
+ActiveDirectoryRights  : ReadProperty
+SecurityIdentifier     : S-1-5-21-1987370270-658905905-1781884369-553
+
+Convert-SidToName S-1-5-21-1987370270-658905905-1781884369-1104
+CORP\stephanie
+
+Convert-SidToName S-1-5-21-1987370270-658905905-1781884369-553
+CORP\RAS and IAS Servers
+
+Find GenericAll permission on the Management Department object:
+Get-ObjectAcl -Identity "Management Department" | ? {$_.ActiveDirectoryRights -eq "GenericAll"} | select SecurityIdentifier,ActiveDirectoryRights
+S-1-5-21-1987370270-658905905-1781884369-512             GenericAll
+S-1-5-21-1987370270-658905905-1781884369-1104            GenericAll
+
+"S-1-5-21-1987370270-658905905-1781884369-512","S-1-5-21-1987370270-658905905-1781884369-1104","S-1-5-32-548","S-1-5-18","S-1-5-21-1987370270-658905905-1781884369-519" | Convert-SidToName
+CORP\Domain Admins
+CORP\stephanie
+
+net group "Management Department" stephanie /add /domain
+Get-NetGroup "Management Department" | select member
+net group "Management Department" stephanie /del /domain
+
+--------
+Enumerating Domain Shares
+
+Find-DomainShare
+Find-DomainShare -CheckShareAccess
+
+SYSVOL
+policies and scripts
+%SystemRoot%\SYSVOL\Sysvol\domain-name
+ls \\dc1.corp.com\sysvol\corp.com\
+ls \\dc1.corp.com\sysvol\corp.com\Policies\
+
+gpp-decrypt "+bsY0V3d4/KgX3VJdO/vyepPfAN1zMFTiQDApgR92JE"
+
+ls \\FILES04\docshare
+
+----------
+Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the enumeration steps outlined in this section and view the information in the accessible shares. What is the hostname for the server sharing the SYSVOL folder in the corp.com domain
+
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+powershell -ep bypass
+Import-Module C:\Tools\PowerView.ps1
+Find-DomainShare
+DC1
+
+--------
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to locate the shares in the modified corp.com domain and enumerate them to obtain the flag
+
+client75 192.168.57.75 stephanie/LegmanTeamBenzoin!!
+
+xfreerdp3 /u:stephanie /v:192.168.57.75
+
+Find-DomainShare
+type '\\FILES04.corp.com\Important Files\proof.txt'
+OS{8e7527c96387f5813301d60193c87735}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

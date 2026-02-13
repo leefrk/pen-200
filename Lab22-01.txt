@@ -1,0 +1,93 @@
+Active Directory Introduction and Enumeration
+
+Active Directory - Manual Enumeration
+
+DC
+
+Client75 192.168.53.75
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.53.75
+LegmanTeamBenzoin!!
+
+net group "Management Department" /domain
+jen
+
+PdcRoleOwner
+
+ADSI
+
+DirectorySearcher
+
+------
+Get-NetGroup
+
+powershell -ep bypass
+Import-Module c:\tools\PowerView.ps1
+Get-NetGroup "Domain Admins" | select member
+
+nathalie
+
+----------
+Manual Enumeration - Expanding our Repertoire
+
+Client75 192.168.53.75
+
+Get-DomainComputer -Identity "web04" | Select-Object DistinguishedName
+
+CN=web04,CN=Computers,DC=corp,DC=com
+
+-----
+Get-NetComputer -Identity "files04" | select operatingsystemversion
+
+10.0 (20348)
+
+-----
+SrvsvcSessionInfo
+
+Remote Registry
+
+SPN
+
+ACE
+
+GenericAll
+
+---------
+Find-DomainShare
+
+DC01 (why wrong?)
+
+------
+Active Directory - Automated Enumeration
+
+Ref: 
+https://github.com/SpecterOps/SharpHound/releases
+
+https://www.kali.org/tools/bloodhound/
+
+looping
+
+-ZipPassword
+
+neo4j
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

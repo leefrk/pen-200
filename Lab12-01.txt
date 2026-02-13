@@ -1,0 +1,22 @@
+Client side attacks
+
+192.168.63.197
+
+exiftool -a -u old.pdf
+
+OS{3dab9f70e4fcd39ec317fcf1bd554e94}
+
+------------------
+gobuster dir -u 192.168.63.197 -x pdf -w /usr/share/wordlists/dirb/common.txt -t 5
+
+exiftool -a -u info.pdf
+
+OS{c8b8889a2d02d3a5eaa8d54fff316dba}
+
+---------------------
+Canarytokens is a free web service that generates a link with an embedded token that we'll send to the target. When the target opens the link in a browser, we will get information about their browser, IP address, and operating system
+
+Dim
+
+-----------
+WebDAV share is a way to access and manage files on a remote server as if they were local, it runs on http/https

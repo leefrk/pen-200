@@ -1,0 +1,40 @@
+Antivirus evasion
+
+192.168.53.61
+
+xfreerdp /u:offsec /p:lab /v:192.168.53.61
+
+http://www.virustotal.com
+
+cannot upload! Upload failed. Make sure the file is readable and not in use.
+
+-----------
+On disk evasion:
+
+Packer, such as UPX, generate an executable that is not only smaller but is also functionally equivalent with a completely new binary structure
+
+Obfuscators reorganize and mutate code in a way that makes it more difficult to reverse-engineer
+
+Crypter software cryptographically alters executable code, adding a decryption stub that restores the original code upon execution
+
+In-Memory evasion (focuses on the manipulation of volatile memory):
+
+Remote Process Memory Injection, inject the payload into another valid PE that is not malicious, WriteProcessMemory
+
+Reflective DLL Injection, load a DLL stored by the attacker in the process memor
+
+Process Hollowing, process is removed and replaced from memory, then process resumed
+
+Inline hooking, introducing a hook into a function to make it point to our malicious code
+
+-------------
+Base64 encoding converts binary data (like images, files, or any non-text data) into a string of printable ASCII text, it is used to hiding binary data within text environments that have restrictions on special characters, ensuring it passes validation
+
+VirtualAlloc
+
+-----------
+Shellter tool is a dynamic shellcode injection framework used by offensive security professionals and malicious actors alike to evade antivirus (AV) and Endpoint Detection and Response (EDR) systems
+
+Stealth Mode
+
+

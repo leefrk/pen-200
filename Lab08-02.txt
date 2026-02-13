@@ -1,0 +1,105 @@
+Introduction to Web application attack
+
+Web application enumeration
+
+192.168.53.52
+
+robots.txt and sitemap.xml contain important directories
+
+User-agent: PWKStudents
+Disallow: /flagF83019680C.html
+
+<loc>/flag43A4972049EB.html</loc>
+
+OS{0939659d242baa224aee393bbdf5e58a}
+
+-------------------
+
+192.168.53.16
+
+pattern:
+{GOBUSTER}/v1
+{GOBUSTER}/v2
+
+gobuster dir -u http://192.168.53.16:5002 -w /usr/share/wordlists/dirb/big.txt -p pattern
+
+curl 
+
+/books/v1
+/console
+/ui
+/users/v1
+
+curl -i http://192.168.53.16:5002/books/v1
+
+"book_title": "bookTitle22", 
+      "user": "admin"
+
+The -i option in the Curl command is a gateway to detailed information about the HTTP response headers. By using this option, users can gain a deeper understanding of the server's response and extract crucial metadata from the HTTP headers.
+-------------------
+
+192.168.53.16
+
+/etc/hosts
+192.168.53.16 offsecwp
+
+<!--
+
+About us page
+
+<p><!-- /wp:paragraph OS{f027490bd86b390716994df9225f3182} --></p>
+
+-------------------------
+
+192.168.53.52
+
+curl -i -L 192.168.53.52
+
+<meta http-equiv="refresh" content="0; URL=/?flag=%4f%53%7b%31%65%63%39%65%32%37%34%64%31%38%66%61%34%36%65%34%64%30%34%39%33%61%38%65%63%61%33%66%61%32%36%7d" /> 
+
+urldecoder.org
+source:UTF-8
+URL-encoded (percent-encoded)
+decode
+
+OS{1ec9e274d18fa46e4d0493a8eca3fa26}
+--------------------
+
+192.168.53.52
+
+curl -i 192.168.53.52
+
+X-Something-Non-Standard: VGhlIGZsYWcgaXM6IE9Te2RjMmRkOWJmNzY1MGViMTgxZDY3ZWIzY2QyZjMzMjc0fQ==
+
+talkai.info
+The given string is encoded in Base64. Decoding it yields:
+
+"The flag is: OS{dc2dd9bf7650eb181d67eb3cd2f33274}"
+--------------
+
+192.168.53.52
+
+curl -i 192.168.53.52
+
+OS{3b7dddf88
+
+http://192.168.53.52/jumbotron.css
+834186074874
+
+http://192.168.53.52/color_flash.js
+console.log("You are on the right track.");
+console.log("Check out the source to determine what function contains the third part of the flag.")
+console.log("Simply run that function to get the flag.")
+function displayflag_6198()
+
+*Run displayflag_6198() in Firefox Developer Tools (F12) Console
+Here is part 3 of 3 of your flag:
+24745086eef}
+
+OS{3b7dddf8883418607487424745086eef}
+
+
+
+
+
+
